@@ -20,6 +20,9 @@ importers:
       google-auth-library:
         specifier: ^10.3.0
         version: 10.3.0
+      googleapis:
+        specifier: ^159.0.0
+        version: 159.0.0
       ioredis:
         specifier: ^5.7.0
         version: 5.7.0
@@ -1399,6 +1402,14 @@ packages:
   googleapis-common@5.1.0:
     resolution: {integrity: sha512-RXrif+Gzhq1QAzfjxulbGvAY3FPj8zq/CYcvgjzDbaBNCD6bUl+86I7mUs4DKWHGruuK26ijjR/eDpWIDgNROA==}
     engines: {node: '>=10.10.0'}
+
+  googleapis-common@8.0.0:
+    resolution: {integrity: sha512-66if47It7y+Sab3HMkwEXx1kCq9qUC9px8ZXoj1CMrmLmUw81GpbnsNlXnlyZyGbGPGcj+tDD9XsZ23m7GLaJQ==}
+    engines: {node: '>=18.0.0'}
+
+  googleapis@159.0.0:
+    resolution: {integrity: sha512-halby2+lQwHNxUDk70aQNXP1BlBwdwr7svTJZvDi7vKwrWbVMKhVrZ86h8p3zRcWbO4qAgLQ4ODAf8TgD3DhGQ==}
+    engines: {node: '>=18'}
 
   googleapis@92.0.0:
     resolution: {integrity: sha512-5HgJg7XvqEEJ+GO+2gvnzd5cAcDuSS/VB6nW7thoyj2GMq9nH4VvJwncSevinjLCnv06a+VSxrXNiL5vePHojA==}
@@ -3933,6 +3944,23 @@ snapshots:
       uuid: 8.3.2
     transitivePeerDependencies:
       - encoding
+      - supports-color
+
+  googleapis-common@8.0.0:
+    dependencies:
+      extend: 3.0.2
+      gaxios: 7.1.1
+      google-auth-library: 10.3.0
+      qs: 6.14.0
+      url-template: 2.0.8
+    transitivePeerDependencies:
+      - supports-color
+
+  googleapis@159.0.0:
+    dependencies:
+      google-auth-library: 10.3.0
+      googleapis-common: 8.0.0
+    transitivePeerDependencies:
       - supports-color
 
   googleapis@92.0.0:

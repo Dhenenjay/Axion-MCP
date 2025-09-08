@@ -337,9 +337,18 @@ async function createBatchExport(params) {
       image = image.multiply(10000).toInt16();
       
       // Define export region
-      const exportRegion = region.type === 'Point' 
-        ? ee.Geometry.Point(region.coordinates).buffer(region.buffer || 5000)
-        : ee.Geometry.Polygon(region.coordinates);
+      let exportRegion;
+      if (region.type === 'Point') {
+        // For points with buffer, we need to evaluate the geometry
+        const point = ee.Geometry.Point(region.coordinates);
+        const buffered = point.buffer(region.buffer || 5000);
+        // Get the evaluated geometry
+        const evaluatedGeometry = buffered.getInfo();
+        // Create a new geometry from the evaluated coordinates
+        exportRegion = ee.Geometry(evaluatedGeometry);
+      } else {
+        exportRegion = ee.Geometry.Polygon(region.coordinates);
+      }
       
       // Create export task configuration
       const exportParams = {
@@ -364,55 +373,40 @@ async function createBatchExport(params) {
       // Generate a unique task ID
       const taskId = `${description}_${Date.now()}`;
       
-      // Try to start the task
-      let taskStarted = false;
-      let taskError = null;
+      // Start the task
+      task.start();
       
-      try {
-        task.start();
-        taskStarted = true;
-      } catch (error) {
-        taskError = error.message;
-      }
+      // Task has been started
+      const taskStatus = { state: 'SUBMITTED' };
       
-      // Prepare response based on task status
-      if (taskStarted) {
-        resolve({
-          status: 'Task submitted successfully',
-          taskId: taskId,
-          description: description,
+      resolve({
+        status: 'Export task submitted to service account Drive',
+        taskId: taskId,
+        taskState: taskStatus.state,
+        description: description,
+        folder: folder,
+        message: 'Export task has been submitted and will process on Google Earth Engine servers',
+        estimatedTime: 'Processing typically takes 5-30 minutes depending on area size',
+        quality: 'Maximum quality Cloud-Optimized GeoTIFF (COG) with 16-bit depth',
+        exportParams: {
+          scale: `${scale}m`,
+          crs: crs,
+          maxPixels: maxPixels,
+          format: 'GeoTIFF (Cloud-Optimized)',
+          bands: bands || 'All bands'
+        },
+        driveAccess: {
+          location: 'Service Account Google Drive',
           folder: folder,
-          message: 'Export task started. The file will appear in Google Drive.',
-          estimatedTime: 'Processing time depends on area size (typically 5-30 minutes)',
-          quality: 'Maximum quality Cloud-Optimized GeoTIFF (COG)',
-          exportParams: {
-            scale: `${scale}m`,
-            crs: crs,
-            maxPixels: maxPixels,
-            format: 'GeoTIFF (Cloud-Optimized)'
-          },
-          instructions: {
-            monitor: 'Check https://code.earthengine.google.com/tasks for progress',
-            download: `File will appear in Google Drive folder: ${folder}`,
-            access: 'Note: File exports to the service account\'s Drive, not your personal Drive',
-            alternative: 'For personal Drive export, use Earth Engine Code Editor directly'
-          }
-        });
-      } else {
-        // If task couldn't start, provide alternative solution
-        resolve({
-          status: 'Task creation failed - Alternative solution provided',
-          error: taskError,
-          alternativeMethod: 'Use Earth Engine Code Editor for Drive export',
-          codeSnippet: generateCodeEditorScript(exportParams),
-          instructions: {
-            step1: 'Copy the code snippet below',
-            step2: 'Go to https://code.earthengine.google.com/',
-            step3: 'Paste and run the code',
-            step4: 'The export will go to your personal Google Drive'
-          }
-        });
-      }
+          fileName: `${description}.tif`,
+          note: 'File will be available in the service account\'s Drive after processing'
+        },
+        monitoring: {
+          checkStatus: 'The task is now running on Google Earth Engine servers',
+          estimatedCompletion: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes estimate
+          downloadInfo: 'Once complete, the file can be accessed via Google Drive API using service account credentials'
+        }
+      });
       
     } catch (error) {
       reject(error);

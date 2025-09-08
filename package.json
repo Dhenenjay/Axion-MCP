@@ -9,17 +9,18 @@
         "test-earthengine": "node scripts/test-earthengine.mjs",
         "test-advanced-earthengine": "node scripts/test-advanced-earthengine.mjs",
         "typecheck": "tsc -p . --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "format": "prettier -w .",
-    "test:client": "node scripts/test-ee-tools.mjs",
-    "test:health": "curl http://localhost:3000/api/health"
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "format": "prettier -w .",
+        "test:client": "node scripts/test-ee-tools.mjs",
+        "test:health": "curl http://localhost:3000/api/health"
     },
     "dependencies": {
         "@google/earthengine": "^1.5.14",
         "@modelcontextprotocol/sdk": "^1.11.1",
         "@vercel/mcp-adapter": "0.3.1",
         "google-auth-library": "^10.3.0",
+        "googleapis": "^159.0.0",
         "ioredis": "^5.7.0",
         "nanoid": "^5.1.5",
         "next": "15.2.4",
