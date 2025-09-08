@@ -167,27 +167,150 @@ async function calculateNDVI(params) {
 }
 
 /**
+ * Create a composite image from a collection
+ * @param {object} params - Composite parameters
+ * @returns {Promise<object>} Composite result
+ */
+async function createComposite(params) {
+  const ee = getEarthEngine();
+  const { 
+    datasetId, 
+    startDate, 
+    endDate, 
+    region, 
+    method = 'median',
+    cloudMask = true 
+  } = params;
+  
+  return new Promise((resolve, reject) => {
+    try {
+      let collection = ee.ImageCollection(datasetId)
+        .filterDate(startDate, endDate);
+      
+      if (region) {
+        const geometry = region.type === 'Point' 
+          ? ee.Geometry.Point(region.coordinates)
+          : ee.Geometry.Polygon(region.coordinates);
+        collection = collection.filterBounds(geometry);
+      }
+      
+      // Apply cloud masking for Sentinel-2
+      if (cloudMask && datasetId.includes('S2')) {
+        collection = collection.map(function(image) {
+          const qa = image.select('QA60');
+          const cloudBitMask = 1 << 10;
+          const cirrusBitMask = 1 << 11;
+          const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+            .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+          return image.updateMask(mask).divide(10000)
+            .select('B.*')
+            .copyProperties(image, ['system:time_start']);
+        });
+      }
+      
+      // Create composite based on method
+      let composite;
+      switch(method) {
+        case 'median':
+          composite = collection.median();
+          break;
+        case 'mean':
+          composite = collection.mean();
+          break;
+        case 'min':
+          composite = collection.min();
+          break;
+        case 'max':
+          composite = collection.max();
+          break;
+        case 'mosaic':
+          composite = collection.mosaic();
+          break;
+        default:
+          composite = collection.median();
+      }
+      
+      // Get collection size
+      collection.size().evaluate((size, error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve({
+            datasetId: datasetId,
+            method: method,
+            startDate: startDate,
+            endDate: endDate,
+            imageCount: size,
+            compositeId: `composite_${Date.now()}`,
+            cloudMasked: cloudMask
+          });
+        }
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
  * Get visualization URL for an image
  * @param {object} params - Visualization parameters
  * @returns {Promise<object>} Map tile URL
  */
 async function getMapUrl(params) {
   const ee = getEarthEngine();
-  const { imageId, visParams = {} } = params;
+  const { imageId, datasetId, startDate, endDate, region, visParams = {}, composite = false } = params;
   
   return new Promise((resolve, reject) => {
     try {
       let image;
       
-      if (imageId.includes('ImageCollection')) {
+      // Handle composite creation if requested
+      if (composite && datasetId) {
+        let collection = ee.ImageCollection(datasetId);
+        
+        if (startDate && endDate) {
+          collection = collection.filterDate(startDate, endDate);
+        }
+        
+        if (region) {
+          const geometry = region.type === 'Point' 
+            ? ee.Geometry.Point(region.coordinates)
+            : ee.Geometry.Polygon(region.coordinates);
+          collection = collection.filterBounds(geometry);
+        }
+        
+        // Apply cloud masking for Sentinel-2
+        if (datasetId.includes('S2')) {
+          collection = collection.map(function(image) {
+            const qa = image.select('QA60');
+            const cloudBitMask = 1 << 10;
+            const cirrusBitMask = 1 << 11;
+            const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+              .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+            return image.updateMask(mask).divide(10000)
+              .select('B.*')
+              .copyProperties(image, ['system:time_start']);
+          });
+        }
+        
+        image = collection.median();
+        
+      } else if (imageId && imageId.includes('ImageCollection')) {
         const collection = ee.ImageCollection(imageId);
         image = collection.median();
-      } else {
+      } else if (imageId) {
         image = ee.Image(imageId);
+      } else {
+        throw new Error('Either imageId or datasetId must be provided');
       }
       
-      // Default visualization parameters
-      const defaultVis = {
+      // Default visualization parameters for Sentinel-2
+      const defaultVis = datasetId && datasetId.includes('S2') ? {
+        min: 0,
+        max: 0.3,
+        bands: ['B4', 'B3', 'B2']
+      } : {
         min: 0,
         max: 3000,
         bands: ['B4', 'B3', 'B2']
@@ -200,7 +323,7 @@ async function getMapUrl(params) {
           reject(error);
         } else {
           resolve({
-            imageId: imageId,
+            imageId: imageId || `${datasetId}_composite`,
             mapId: mapId.mapid,
             urlTemplate: `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapId.mapid}-{id}/tiles/{z}/{x}/{y}`,
             token: mapId.token,
@@ -280,6 +403,7 @@ module.exports = {
   getBandNames,
   filterCollection,
   calculateNDVI,
+  createComposite,
   getMapUrl,
   calculateStatistics
 };

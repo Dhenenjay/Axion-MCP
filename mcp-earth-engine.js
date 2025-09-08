@@ -112,6 +112,64 @@ const TOOL_DEFINITIONS = [
       },
       required: ['imageId']
     }
+  },
+  {
+    name: 'create_composite',
+    description: 'Create a cloud-free composite image from a collection',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Dataset ID (e.g., "COPERNICUS/S2_SR_HARMONIZED")' },
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD)' },
+        region: { 
+          type: 'object', 
+          description: 'GeoJSON geometry',
+          properties: {
+            type: { type: 'string' },
+            coordinates: { type: 'array' }
+          }
+        },
+        method: { 
+          type: 'string', 
+          description: 'Composite method (median, mean, min, max, mosaic)',
+          enum: ['median', 'mean', 'min', 'max', 'mosaic']
+        },
+        cloudMask: { type: 'boolean', description: 'Apply cloud masking (default: true)' }
+      },
+      required: ['datasetId', 'startDate', 'endDate']
+    }
+  },
+  {
+    name: 'get_composite_map',
+    description: 'Get a visualization URL for a composite image',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Dataset ID' },
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD)' },
+        region: { 
+          type: 'object', 
+          description: 'GeoJSON geometry',
+          properties: {
+            type: { type: 'string' },
+            coordinates: { type: 'array' }
+          }
+        },
+        visParams: {
+          type: 'object',
+          description: 'Visualization parameters',
+          properties: {
+            bands: { type: 'array', items: { type: 'string' } },
+            min: { type: 'number' },
+            max: { type: 'number' },
+            palette: { type: 'array', items: { type: 'string' } }
+          }
+        }
+      },
+      required: ['datasetId', 'startDate', 'endDate']
+    }
   }
 ];
 
@@ -214,6 +272,22 @@ async function handleToolCall(message) {
         
       case 'calculate_statistics':
         result = await tools.calculateStatistics(args);
+        break;
+        
+      case 'create_composite':
+        result = await tools.createComposite(args);
+        break;
+        
+      case 'get_composite_map':
+        // For composite map, we use getMapUrl with composite flag
+        result = await tools.getMapUrl({
+          datasetId: args.datasetId,
+          startDate: args.startDate,
+          endDate: args.endDate,
+          region: args.region,
+          visParams: args.visParams,
+          composite: true
+        });
         break;
         
       default:
