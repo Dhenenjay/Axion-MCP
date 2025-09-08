@@ -288,7 +288,7 @@ async function getMapUrl(params) {
             const cirrusBitMask = 1 << 11;
             const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
               .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
-            return image.updateMask(mask).divide(10000)
+            return image.updateMask(mask)
               .select('B.*')
               .copyProperties(image, ['system:time_start']);
           });
@@ -308,8 +308,9 @@ async function getMapUrl(params) {
       // Default visualization parameters for Sentinel-2
       const defaultVis = datasetId && datasetId.includes('S2') ? {
         min: 0,
-        max: 0.3,
-        bands: ['B4', 'B3', 'B2']
+        max: 3000,
+        bands: ['B4', 'B3', 'B2'],
+        gamma: 1.4
       } : {
         min: 0,
         max: 3000,
@@ -318,23 +319,49 @@ async function getMapUrl(params) {
       
       const finalVis = { ...defaultVis, ...visParams };
       
+      // For direct viewing, also generate a static thumbnail
+      const thumbParams = {
+        dimensions: '1024x768',
+        format: 'png',
+        ...finalVis
+      };
+      
+      // Add region if specified
+      if (region) {
+        const geometry = region.type === 'Point' 
+          ? ee.Geometry.Point(region.coordinates).buffer(50000) // 50km buffer
+          : ee.Geometry.Polygon(region.coordinates);
+        thumbParams.region = geometry;
+      }
+      
+      // Get both map tiles and thumbnail
       image.getMap(finalVis, (mapId, error) => {
         if (error) {
           reject(error);
         } else {
-          // Generate both legacy and new API URLs
-          const legacyUrl = `https://earthengine.googleapis.com/v1alpha/${mapId.mapid}/tiles/{z}/{x}/{y}`;
-          const tilesUrl = `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapId.mapid}-${mapId.token}/tiles/{z}/{x}/{y}`;
+          // Also get thumbnail URL for direct viewing
+          const thumbnailUrl = image.getThumbURL(thumbParams);
           
           resolve({
             imageId: imageId || `${datasetId}_composite`,
             mapId: mapId.mapid,
             token: mapId.token,
-            urlTemplate: tilesUrl,
-            legacyUrl: legacyUrl,
-            tileUrl: tilesUrl.replace('{z}', '10').replace('{x}', '163').replace('{y}', '395'), // Example tile
+            
+            // Tile URLs for web mapping
+            tileUrlTemplate: `https://earthengine.googleapis.com/v1alpha/${mapId.mapid}/tiles/{z}/{x}/{y}`,
+            
+            // Direct viewable image
+            thumbnailUrl: thumbnailUrl,
+            viewInBrowser: thumbnailUrl,
+            
             visParams: finalVis,
-            instructions: 'Use the tileUrl in a map viewer like Leaflet or Google Maps. The URL template can be used with {z}, {x}, {y} placeholders.'
+            instructions: 'Use thumbnailUrl/viewInBrowser to see the image directly. Use tileUrlTemplate for web mapping applications.',
+            
+            // Example URLs
+            exampleTileUrl: `https://earthengine.googleapis.com/v1alpha/${mapId.mapid}/tiles/8/41/99`,
+            
+            // For embedding in HTML
+            htmlEmbed: `<img src="${thumbnailUrl}" alt="Earth Engine Image" style="max-width: 100%; height: auto;" />`
           });
         }
       });
@@ -378,19 +405,19 @@ async function getThumbnail(params) {
           collection = collection.filterBounds(geometry);
         }
         
-        // Apply cloud masking for Sentinel-2
-        if (datasetId.includes('S2')) {
-          collection = collection.map(function(image) {
-            const qa = image.select('QA60');
-            const cloudBitMask = 1 << 10;
-            const cirrusBitMask = 1 << 11;
-            const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
-              .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
-            return image.updateMask(mask).divide(10000)
-              .select('B.*')
-              .copyProperties(image, ['system:time_start']);
-          });
-        }
+      // Apply cloud masking for Sentinel-2
+      if (datasetId && datasetId.includes('S2')) {
+        collection = collection.map(function(image) {
+          const qa = image.select('QA60');
+          const cloudBitMask = 1 << 10;
+          const cirrusBitMask = 1 << 11;
+          const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+            .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+          return image.updateMask(mask)
+            .select('B.*')
+            .copyProperties(image, ['system:time_start']);
+        });
+      }
         
         image = collection.median();
       } else if (imageId) {
@@ -400,10 +427,12 @@ async function getThumbnail(params) {
       }
       
       // Set visualization parameters
+      // Sentinel-2 values are in range 0-10000, scale appropriately
       const defaultVis = datasetId && datasetId.includes('S2') ? {
         min: 0,
-        max: 0.3,
-        bands: ['B4', 'B3', 'B2']
+        max: 3000,
+        bands: ['B4', 'B3', 'B2'],
+        gamma: 1.4
       } : {
         min: 0,
         max: 3000,
