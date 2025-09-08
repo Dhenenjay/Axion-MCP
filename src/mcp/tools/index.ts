@@ -2,6 +2,7 @@
 import './auth_check';
 import './search_gee_catalog';
 import './filter_collection';
+import './smart_filter';  // Smart filtering with place name detection
 import './get_band_names';
 import './load_cog_from_gcs';
 import './mask_clouds';
