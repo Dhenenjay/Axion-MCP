@@ -1,4 +1,5 @@
 const { getEarthEngine } = require('./init');
+const { exportToDownload, exportToDrive } = require('./export');
 
 /**
  * Search the Earth Engine data catalog
@@ -543,5 +544,7 @@ module.exports = {
   createComposite,
   getMapUrl,
   getThumbnail,
-  calculateStatistics
+  calculateStatistics,
+  exportToDownload,
+  exportToDrive
 };

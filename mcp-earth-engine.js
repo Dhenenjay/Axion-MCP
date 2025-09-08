@@ -203,6 +203,65 @@ const TOOL_DEFINITIONS = [
         }
       }
     }
+  },
+  {
+    name: 'export_geotiff',
+    description: 'Export full resolution GeoTIFF with download link',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Dataset ID for composite creation' },
+        imageId: { type: 'string', description: 'Specific image ID' },
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD)' },
+        region: { 
+          type: 'object', 
+          description: 'GeoJSON geometry for export area',
+          properties: {
+            type: { type: 'string' },
+            coordinates: { type: 'array' }
+          }
+        },
+        bands: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Specific bands to export (e.g., ["B4", "B3", "B2"])'
+        },
+        scale: { type: 'number', description: 'Pixel resolution in meters (default: 10 for Sentinel-2)' },
+        fileName: { type: 'string', description: 'Output file name (without extension)' },
+        crs: { type: 'string', description: 'Coordinate Reference System (default: EPSG:4326)' },
+        maxPixels: { type: 'number', description: 'Maximum number of pixels to export' }
+      }
+    }
+  },
+  {
+    name: 'export_to_drive',
+    description: 'Export GeoTIFF to Google Drive',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Dataset ID for composite creation' },
+        imageId: { type: 'string', description: 'Specific image ID' },
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD)' },
+        region: { 
+          type: 'object', 
+          description: 'GeoJSON geometry for export area',
+          properties: {
+            type: { type: 'string' },
+            coordinates: { type: 'array' }
+          }
+        },
+        bands: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Specific bands to export'
+        },
+        scale: { type: 'number', description: 'Pixel resolution in meters' },
+        folder: { type: 'string', description: 'Google Drive folder name' },
+        fileName: { type: 'string', description: 'Output file name' }
+      }
+    }
   }
 ];
 
@@ -325,6 +384,14 @@ async function handleToolCall(message) {
         
       case 'get_thumbnail':
         result = await tools.getThumbnail(args);
+        break;
+        
+      case 'export_geotiff':
+        result = await tools.exportToDownload(args);
+        break;
+        
+      case 'export_to_drive':
+        result = await tools.exportToDrive(args);
         break;
         
       default:
