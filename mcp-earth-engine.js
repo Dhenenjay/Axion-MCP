@@ -170,6 +170,39 @@ const TOOL_DEFINITIONS = [
       },
       required: ['datasetId', 'startDate', 'endDate']
     }
+  },
+  {
+    name: 'get_thumbnail',
+    description: 'Generate a direct viewable thumbnail image URL',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Dataset ID for composite creation' },
+        imageId: { type: 'string', description: 'Specific image ID' },
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD)' },
+        region: { 
+          type: 'object', 
+          description: 'GeoJSON geometry',
+          properties: {
+            type: { type: 'string' },
+            coordinates: { type: 'array' }
+          }
+        },
+        dimensions: { type: 'string', description: 'Image dimensions (e.g., "512x512", "1024x768")' },
+        format: { type: 'string', description: 'Image format (png or jpg)', enum: ['png', 'jpg'] },
+        visParams: {
+          type: 'object',
+          description: 'Visualization parameters',
+          properties: {
+            bands: { type: 'array', items: { type: 'string' } },
+            min: { type: 'number' },
+            max: { type: 'number' },
+            palette: { type: 'array', items: { type: 'string' } }
+          }
+        }
+      }
+    }
   }
 ];
 
@@ -288,6 +321,10 @@ async function handleToolCall(message) {
           visParams: args.visParams,
           composite: true
         });
+        break;
+        
+      case 'get_thumbnail':
+        result = await tools.getThumbnail(args);
         break;
         
       default:

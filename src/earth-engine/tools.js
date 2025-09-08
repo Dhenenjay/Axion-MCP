@@ -322,15 +322,123 @@ async function getMapUrl(params) {
         if (error) {
           reject(error);
         } else {
+          // Generate both legacy and new API URLs
+          const legacyUrl = `https://earthengine.googleapis.com/v1alpha/${mapId.mapid}/tiles/{z}/{x}/{y}`;
+          const tilesUrl = `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapId.mapid}-${mapId.token}/tiles/{z}/{x}/{y}`;
+          
           resolve({
             imageId: imageId || `${datasetId}_composite`,
             mapId: mapId.mapid,
-            urlTemplate: `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapId.mapid}-{id}/tiles/{z}/{x}/{y}`,
             token: mapId.token,
-            visParams: finalVis
+            urlTemplate: tilesUrl,
+            legacyUrl: legacyUrl,
+            tileUrl: tilesUrl.replace('{z}', '10').replace('{x}', '163').replace('{y}', '395'), // Example tile
+            visParams: finalVis,
+            instructions: 'Use the tileUrl in a map viewer like Leaflet or Google Maps. The URL template can be used with {z}, {x}, {y} placeholders.'
           });
         }
       });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Get a thumbnail image URL
+ * @param {object} params - Thumbnail parameters
+ * @returns {Promise<object>} Thumbnail URL
+ */
+async function getThumbnail(params) {
+  const ee = getEarthEngine();
+  const { 
+    datasetId, 
+    imageId,
+    startDate, 
+    endDate, 
+    region, 
+    dimensions = '512x512',
+    format = 'png',
+    visParams = {} 
+  } = params;
+  
+  return new Promise((resolve, reject) => {
+    try {
+      let image;
+      
+      // Create composite if dataset info provided
+      if (datasetId && startDate && endDate) {
+        let collection = ee.ImageCollection(datasetId)
+          .filterDate(startDate, endDate);
+        
+        if (region) {
+          const geometry = region.type === 'Point' 
+            ? ee.Geometry.Point(region.coordinates).buffer(10000) // 10km buffer for point
+            : ee.Geometry.Polygon(region.coordinates);
+          collection = collection.filterBounds(geometry);
+        }
+        
+        // Apply cloud masking for Sentinel-2
+        if (datasetId.includes('S2')) {
+          collection = collection.map(function(image) {
+            const qa = image.select('QA60');
+            const cloudBitMask = 1 << 10;
+            const cirrusBitMask = 1 << 11;
+            const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+              .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+            return image.updateMask(mask).divide(10000)
+              .select('B.*')
+              .copyProperties(image, ['system:time_start']);
+          });
+        }
+        
+        image = collection.median();
+      } else if (imageId) {
+        image = ee.Image(imageId);
+      } else {
+        throw new Error('Either imageId or datasetId must be provided');
+      }
+      
+      // Set visualization parameters
+      const defaultVis = datasetId && datasetId.includes('S2') ? {
+        min: 0,
+        max: 0.3,
+        bands: ['B4', 'B3', 'B2']
+      } : {
+        min: 0,
+        max: 3000,
+        bands: ['B4', 'B3', 'B2']
+      };
+      
+      const finalVis = { ...defaultVis, ...visParams };
+      
+      // Prepare thumbnail parameters
+      const thumbParams = {
+        dimensions: dimensions,
+        format: format,
+        ...finalVis
+      };
+      
+      // Add region if specified
+      if (region) {
+        const geometry = region.type === 'Point' 
+          ? ee.Geometry.Point(region.coordinates).buffer(10000)
+          : ee.Geometry.Polygon(region.coordinates);
+        thumbParams.region = geometry;
+      }
+      
+      // Get thumbnail URL
+      const thumbnailUrl = image.getThumbURL(thumbParams);
+      
+      resolve({
+        thumbnailUrl: thumbnailUrl,
+        dimensions: dimensions,
+        format: format,
+        visParams: finalVis,
+        description: 'Direct link to view the image. Open this URL in a browser to see the thumbnail.',
+        datasetId: datasetId || imageId
+      });
+      
     } catch (error) {
       reject(error);
     }
@@ -405,5 +513,6 @@ module.exports = {
   calculateNDVI,
   createComposite,
   getMapUrl,
+  getThumbnail,
   calculateStatistics
 };
