@@ -351,10 +351,10 @@ async function createBatchExport(params) {
       }
       
       // Create export task configuration
+      // Note: Removing folder parameter to export to root of Drive
       const exportParams = {
         image: image,
         description: description,
-        folder: folder,
         fileNamePrefix: description,
         region: exportRegion,
         scale: scale,
@@ -366,6 +366,11 @@ async function createBatchExport(params) {
           noData: -9999
         }
       };
+      
+      // Only add folder if specified
+      if (folder) {
+        exportParams.folder = folder;
+      }
       
       // Create the task but don't start it yet
       const task = ee.batch.Export.image.toDrive(exportParams);

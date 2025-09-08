@@ -234,10 +234,63 @@ async function waitAndDownload(keyPath, fileName, outputPath, maxWaitMinutes = 3
   throw new Error(`Timeout: File ${fileName} was not available after ${maxWaitMinutes} minutes`);
 }
 
+/**
+ * Create a folder in service account's Drive if it doesn't exist
+ * @param {string} keyPath - Path to service account JSON key file
+ * @param {string} folderName - Name of the folder to create
+ * @returns {Promise<object>} Folder information
+ */
+async function createFolderIfNotExists(keyPath, folderName) {
+  try {
+    const drive = await initializeDriveAPI(keyPath);
+    
+    // Check if folder already exists
+    const searchResponse = await drive.files.list({
+      q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)',
+      pageSize: 1
+    });
+    
+    if (searchResponse.data.files.length > 0) {
+      // Folder exists
+      return {
+        exists: true,
+        id: searchResponse.data.files[0].id,
+        name: searchResponse.data.files[0].name,
+        message: 'Folder already exists'
+      };
+    }
+    
+    // Create the folder
+    const fileMetadata = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder'
+    };
+    
+    const folder = await drive.files.create({
+      requestBody: fileMetadata,
+      fields: 'id, name'
+    });
+    
+    return {
+      exists: false,
+      created: true,
+      id: folder.data.id,
+      name: folder.data.name,
+      message: 'Folder created successfully'
+    };
+    
+  } catch (error) {
+    console.error('Error creating folder:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   initializeDriveAPI,
   listDriveFiles,
   downloadFromDrive,
   getFileDownloadUrl,
-  waitAndDownload
+  waitAndDownload,
+  createFolderIfNotExists
 };
