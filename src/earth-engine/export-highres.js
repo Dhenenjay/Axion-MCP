@@ -1,6 +1,48 @@
 const { getEarthEngine } = require('./init');
 
 /**
+ * Generate Earth Engine Code Editor script for manual export
+ * @param {object} params - Export parameters
+ * @returns {string} JavaScript code for Earth Engine Code Editor
+ */
+function generateCodeEditorScript(params) {
+  const { image, description, folder, region, scale, crs, maxPixels } = params;
+  
+  // Generate JavaScript code that can be run in Earth Engine Code Editor
+  return `
+// Earth Engine Code Editor Script
+// Generated for manual export to your personal Google Drive
+// Copy and paste this into https://code.earthengine.google.com/
+
+// Define the export region
+var exportRegion = ee.Geometry(${JSON.stringify(region.getInfo())});
+
+// Note: You'll need to recreate the image processing
+// This is a template - adjust based on your specific needs
+var image = ee.Image(/* Your image processing here */);
+
+// Export to Drive
+Export.image.toDrive({
+  image: image,
+  description: '${description}',
+  folder: '${folder}',
+  fileNamePrefix: '${description}',
+  region: exportRegion,
+  scale: ${scale},
+  crs: '${crs}',
+  maxPixels: ${maxPixels},
+  fileFormat: 'GeoTIFF',
+  formatOptions: {
+    cloudOptimized: true
+  }
+});
+
+// Click 'Run' and then go to the 'Tasks' tab to start the export
+print('Export task created. Check the Tasks tab to start the export.');
+`;
+}
+
+/**
  * Generate a high-resolution GeoTIFF export URL with full quality
  * This uses Earth Engine's getDownloadURL with proper parameters for full resolution
  * @param {object} params - Export parameters
@@ -299,8 +341,8 @@ async function createBatchExport(params) {
         ? ee.Geometry.Point(region.coordinates).buffer(region.buffer || 5000)
         : ee.Geometry.Polygon(region.coordinates);
       
-      // Create export task
-      const task = ee.batch.Export.image.toDrive({
+      // Create export task configuration
+      const exportParams = {
         image: image,
         description: description,
         folder: folder,
@@ -314,25 +356,63 @@ async function createBatchExport(params) {
           cloudOptimized: true,
           noData: -9999
         }
-      });
+      };
       
-      // Start the task
-      task.start();
+      // Create the task but don't start it yet
+      const task = ee.batch.Export.image.toDrive(exportParams);
       
-      resolve({
-        status: 'Task submitted',
-        taskId: task.id,
-        description: description,
-        folder: folder,
-        message: 'Export task started. Check your Google Drive for the file.',
-        estimatedTime: 'Processing time depends on area size (typically 5-30 minutes)',
-        quality: 'Maximum quality Cloud-Optimized GeoTIFF (COG)',
-        instructions: {
-          monitor: 'Check https://code.earthengine.google.com/tasks for progress',
-          download: `File will appear in Google Drive folder: ${folder}`,
-          gis: 'Download from Drive and import into ArcGIS/QGIS for full resolution analysis'
-        }
-      });
+      // Generate a unique task ID
+      const taskId = `${description}_${Date.now()}`;
+      
+      // Try to start the task
+      let taskStarted = false;
+      let taskError = null;
+      
+      try {
+        task.start();
+        taskStarted = true;
+      } catch (error) {
+        taskError = error.message;
+      }
+      
+      // Prepare response based on task status
+      if (taskStarted) {
+        resolve({
+          status: 'Task submitted successfully',
+          taskId: taskId,
+          description: description,
+          folder: folder,
+          message: 'Export task started. The file will appear in Google Drive.',
+          estimatedTime: 'Processing time depends on area size (typically 5-30 minutes)',
+          quality: 'Maximum quality Cloud-Optimized GeoTIFF (COG)',
+          exportParams: {
+            scale: `${scale}m`,
+            crs: crs,
+            maxPixels: maxPixels,
+            format: 'GeoTIFF (Cloud-Optimized)'
+          },
+          instructions: {
+            monitor: 'Check https://code.earthengine.google.com/tasks for progress',
+            download: `File will appear in Google Drive folder: ${folder}`,
+            access: 'Note: File exports to the service account\'s Drive, not your personal Drive',
+            alternative: 'For personal Drive export, use Earth Engine Code Editor directly'
+          }
+        });
+      } else {
+        // If task couldn't start, provide alternative solution
+        resolve({
+          status: 'Task creation failed - Alternative solution provided',
+          error: taskError,
+          alternativeMethod: 'Use Earth Engine Code Editor for Drive export',
+          codeSnippet: generateCodeEditorScript(exportParams),
+          instructions: {
+            step1: 'Copy the code snippet below',
+            step2: 'Go to https://code.earthengine.google.com/',
+            step3: 'Paste and run the code',
+            step4: 'The export will go to your personal Google Drive'
+          }
+        });
+      }
       
     } catch (error) {
       reject(error);
