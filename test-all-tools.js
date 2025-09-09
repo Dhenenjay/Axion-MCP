@@ -1,262 +1,162 @@
-#!/usr/bin/env node
+const http = require('http');
 
-const { spawn } = require('child_process');
-
-console.log('🌍 Testing All Earth Engine MCP Tools');
-console.log('=====================================\n');
-
-// Start the MCP server
-const server = spawn('node', ['mcp-earth-engine.js'], {
-  cwd: __dirname,
-  env: {
-    ...process.env,
-    EARTH_ENGINE_PRIVATE_KEY: 'C:\\Users\\Dhenenjay\\Downloads\\ee-key.json'
-  }
-});
-
-let responseBuffer = '';
-let testResults = [];
-
-// Handle server output
-server.stdout.on('data', (data) => {
-  responseBuffer += data.toString();
-  try {
-    const lines = responseBuffer.split('\n');
-    for (let i = 0; i < lines.length - 1; i++) {
-      if (lines[i].trim()) {
-        const response = JSON.parse(lines[i]);
-        if (response.result && response.id) {
-          console.log(`✅ Test ${response.id} passed`);
-          if (response.result.content) {
-            console.log('   Result:', response.result.content[0].text.substring(0, 100) + '...\n');
+// Test helper function
+async function testTool(toolName, args, description) {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`Testing: ${description}`);
+  console.log(`Tool: ${toolName}`);
+  console.log(`Args:`, JSON.stringify(args, null, 2));
+  console.log('-'.repeat(60));
+  
+  return new Promise((resolve) => {
+    const data = JSON.stringify({
+      tool: toolName,
+      arguments: args
+    });
+    
+    const req = http.request({
+      hostname: 'localhost',
+      port: 3000,
+      path: '/api/mcp/sse',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    }, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        console.log(`Status: ${res.statusCode}`);
+        if (res.statusCode === 200) {
+          console.log(`✅ SUCCESS`);
+          try {
+            const result = JSON.parse(body);
+            // Show abbreviated response
+            const responseStr = JSON.stringify(result);
+            if (responseStr.length > 500) {
+              console.log(`Response: ${responseStr.substring(0, 500)}...`);
+            } else {
+              console.log(`Response:`, result);
+            }
+          } catch (e) {
+            console.log(`Response: ${body.substring(0, 500)}...`);
           }
-          testResults.push({ id: response.id, success: true });
+        } else {
+          console.log(`❌ FAILED`);
+          console.log(`Error: ${body}`);
         }
-      }
-    }
-    responseBuffer = lines[lines.length - 1];
-  } catch (e) {
-    // Buffer incomplete
-  }
-});
-
-server.stderr.on('data', (data) => {
-  const msg = data.toString().trim();
-  if (msg.includes('[MCP]')) {
-    console.log('ℹ️', msg);
-  }
-});
-
-server.on('error', (error) => {
-  console.error('❌ Server error:', error);
-  process.exit(1);
-});
-
-// Test sequence
-async function runTests() {
-  console.log('📝 Starting comprehensive test sequence...\n');
-  
-  await sleep(3000);
-  
-  // Test 1: Initialize
-  console.log('Test 1: Initialize server');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'initialize',
-    params: { protocolVersion: '2024-11-05', capabilities: {} },
-    id: 1
+        resolve();
+      });
+    });
+    
+    req.on('error', (err) => {
+      console.log(`❌ Connection error: ${err.message}`);
+      resolve();
+    });
+    
+    req.setTimeout(15000, () => {
+      req.destroy();
+      console.log(`❌ Request timeout`);
+      resolve();
+    });
+    
+    req.write(data);
+    req.end();
   });
-  await sleep(2000);
-  
-  // Test 2: List tools
-  console.log('Test 2: List all available tools');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/list',
-    params: {},
-    id: 2
-  });
-  await sleep(1000);
-  
-  // Test 3: Search catalog
-  console.log('Test 3: Search for Sentinel-2 datasets');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'search_catalog',
-      arguments: { query: 'sentinel-2' }
-    },
-    id: 3
-  });
-  await sleep(2000);
-  
-  // Test 4: Get band names
-  console.log('Test 4: Get Sentinel-2 band names');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'get_band_names',
-      arguments: { datasetId: 'COPERNICUS/S2_SR_HARMONIZED' }
-    },
-    id: 4
-  });
-  await sleep(3000);
-  
-  // Test 5: Filter collection
-  console.log('Test 5: Filter Sentinel-2 for San Francisco');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'filter_collection',
-      arguments: {
-        datasetId: 'COPERNICUS/S2_SR_HARMONIZED',
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        region: {
-          type: 'Point',
-          coordinates: [-122.4194, 37.7749]
-        }
-      }
-    },
-    id: 5
-  });
-  await sleep(3000);
-  
-  // Test 6: Create composite
-  console.log('Test 6: Create cloud-free composite');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'create_composite',
-      arguments: {
-        datasetId: 'COPERNICUS/S2_SR_HARMONIZED',
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        region: {
-          type: 'Point',
-          coordinates: [-122.4194, 37.7749]
-        },
-        method: 'median',
-        cloudMask: true
-      }
-    },
-    id: 6
-  });
-  await sleep(4000);
-  
-  // Test 7: Get composite map URL
-  console.log('Test 7: Get composite visualization URL');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'get_composite_map',
-      arguments: {
-        datasetId: 'COPERNICUS/S2_SR_HARMONIZED',
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        region: {
-          type: 'Point',
-          coordinates: [-122.4194, 37.7749]
-        },
-        visParams: {
-          bands: ['B4', 'B3', 'B2'],
-          min: 0,
-          max: 0.3
-        }
-      }
-    },
-    id: 7
-  });
-  await sleep(4000);
-  
-  // Test 8: Calculate NDVI
-  console.log('Test 8: Calculate NDVI');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'calculate_ndvi',
-      arguments: {
-        imageId: 'COPERNICUS/S2_SR_HARMONIZED',
-        redBand: 'B4',
-        nirBand: 'B8'
-      }
-    },
-    id: 8
-  });
-  await sleep(3000);
-  
-  // Test 9: Get regular map URL
-  console.log('Test 9: Get standard visualization URL');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'get_map_url',
-      arguments: {
-        imageId: 'COPERNICUS/S2_SR_HARMONIZED',
-        visParams: {
-          bands: ['B4', 'B3', 'B2'],
-          min: 0,
-          max: 3000
-        }
-      }
-    },
-    id: 9
-  });
-  await sleep(3000);
-  
-  // Test 10: Calculate statistics
-  console.log('Test 10: Calculate image statistics');
-  sendMessage({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'calculate_statistics',
-      arguments: {
-        imageId: 'COPERNICUS/S2_SR_HARMONIZED',
-        region: {
-          type: 'Polygon',
-          coordinates: [[
-            [-122.5, 37.7],
-            [-122.4, 37.7],
-            [-122.4, 37.8],
-            [-122.5, 37.8],
-            [-122.5, 37.7]
-          ]]
-        },
-        scale: 30
-      }
-    },
-    id: 10
-  });
-  await sleep(3000);
-  
-  // Summary
-  console.log('\n📊 Test Summary');
-  console.log('===============');
-  console.log(`Total tests: 10`);
-  console.log(`Passed: ${testResults.filter(r => r.success).length}`);
-  console.log(`Failed: ${testResults.filter(r => !r.success).length}`);
-  
-  console.log('\n✨ All tests complete!');
-  console.log('Press Ctrl+C to exit.\n');
 }
 
-function sendMessage(message) {
-  const msgStr = JSON.stringify(message);
-  console.log(`\n📤 Sending: ${message.method || 'tools/call'} (ID: ${message.id})`);
-  server.stdin.write(msgStr + '\n');
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// Run all tests
+async function runAllTests() {
+  console.log('\n🚀 Starting Earth Engine MCP Tools Test Suite\n');
+  
+  // Test 1: Convert place to shapefile geometry
+  await testTool(
+    'convert_place_to_shapefile_geometry',
+    { placeName: 'Los Angeles' },
+    'Convert Los Angeles to shapefile geometry'
+  );
+  
+  // Test 2: Filter collection by date and region with place name
+  await testTool(
+    'filter_collection_by_date_and_region',
+    {
+      datasetId: 'COPERNICUS/S2_SR_HARMONIZED',
+      start: '2024-01-01',
+      end: '2024-01-31',
+      aoi: 'San Francisco',
+      placeName: 'San Francisco'
+    },
+    'Filter Sentinel-2 collection for San Francisco in January 2024'
+  );
+  
+  // Test 3: Search GEE catalog
+  await testTool(
+    'search_gee_catalog',
+    { query: 'Sentinel-2' },
+    'Search for Sentinel-2 datasets'
+  );
+  
+  // Test 4: Create clean mosaic
+  await testTool(
+    'create_clean_mosaic',
+    {
+      datasetId: 'COPERNICUS/S2_SR_HARMONIZED',
+      start: '2024-01-01',
+      end: '2024-01-31'
+    },
+    'Create median composite for Sentinel-2'
+  );
+  
+  // Test 5: Calculate spectral index
+  await testTool(
+    'calculate_spectral_index',
+    {
+      imageId: 'COPERNICUS/S2_SR_HARMONIZED/20240115T183921_20240115T184507_T10SEG',
+      index: 'NDVI'
+    },
+    'Calculate NDVI for a Sentinel-2 image'
+  );
+  
+  // Test 6: Get thumbnail with coordinates
+  await testTool(
+    'get_thumbnail_image',
+    {
+      datasetId: 'COPERNICUS/S2_SR_HARMONIZED',
+      start: '2024-01-01',
+      end: '2024-01-31',
+      aoi: '-122.4194, 37.7749'  // San Francisco coordinates
+    },
+    'Get thumbnail for San Francisco area (using coordinates)'
+  );
+  
+  // Test 7: Export image (this will just validate, not actually export)
+  await testTool(
+    'export_image_to_cloud_storage',
+    {
+      imageId: 'COPERNICUS/S2_SR_HARMONIZED/20240115T183921_20240115T184507_T10SEG',
+      region: 'Los Angeles'
+    },
+    'Export Sentinel-2 image for Los Angeles region'
+  );
+  
+  // Test 8: Filter with coordinates instead of place name
+  await testTool(
+    'filter_collection_by_date_and_region',
+    {
+      datasetId: 'LANDSAT/LC08/C02/T1_L2',
+      start: '2024-06-01',
+      end: '2024-06-30',
+      aoi: '-118.2437, 34.0522',  // LA coordinates
+      placeName: '-118.2437, 34.0522'
+    },
+    'Filter Landsat 8 collection using coordinates'
+  );
+  
+  console.log('\n' + '='.repeat(60));
+  console.log('✨ Test Suite Completed!');
+  console.log('='.repeat(60) + '\n');
 }
 
 // Run tests
-setTimeout(runTests, 1000);
+runAllTests().catch(console.error);

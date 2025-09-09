@@ -22,7 +22,7 @@ register({
     }
     
     const img = new ee.Image(imageId);
-    const region = parseAoi(aoi);
+    const region = await parseAoi(aoi);
     const regionType = aoi.placeName && region ? 'administrative_boundary' : 'polygon';
     
     img.clip(region).bandNames();

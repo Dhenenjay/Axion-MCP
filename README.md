@@ -9,6 +9,7 @@ A Model Context Protocol (MCP) server for Google Earth Engine that enables satel
 1. **Google Earth Engine Account**: Sign up at [earthengine.google.com](https://earthengine.google.com)
 2. **Service Account Key**: Create a service account in Google Cloud Console with Earth Engine API access
 3. **Node.js**: Version 18 or higher
+4. **Google Cloud Storage Permissions** (for exports): See [GCS Permissions Guide](docs/GCS_PERMISSIONS.md)
 
 ### Installation
 
@@ -144,6 +145,21 @@ Calculate image statistics for a region.
   "scale": 30
 }
 ```
+
+### 7. **export_image_to_cloud_storage** 🆕
+Export satellite imagery to Google Cloud Storage (works with service accounts).
+```json
+{
+  "collection": "COPERNICUS/S2_SR_HARMONIZED",
+  "start_date": "2024-01-01",
+  "end_date": "2024-01-31",
+  "region": "Los Angeles",
+  "scale": 10,
+  "bucket": "earth-engine-exports-PROJECT_ID"
+}
+```
+
+**Note**: Service accounts cannot export to Google Drive. Use GCS exports instead. See [GCS Permissions Guide](docs/GCS_PERMISSIONS.md) for setup instructions.
 
 ## 🧪 Testing
 

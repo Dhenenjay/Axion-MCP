@@ -8,7 +8,7 @@ register({
   input: z.object({ datasetId: z.string(), aoi: z.any(), band: z.string() }),
   output: z.object({ series: z.array(z.object({ t:z.string(), value:z.number().nullable() })) }),
   handler: async ({ datasetId, aoi, band }) => {
-    const region = parseAoi(aoi);
+    const region = await parseAoi(aoi);
     const col = new ee.ImageCollection(datasetId)
       .map((img: any) => img.set('date', img.date().format('YYYY-MM')))
       .select(band);

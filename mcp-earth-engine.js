@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
 const readline = require('readline');
-const { initializeEarthEngine } = require('./src/earth-engine/init');
-const tools = require('./src/earth-engine/tools');
-
-// Get Earth Engine key path from environment or command line
-const EE_KEY_PATH = process.env.EARTH_ENGINE_PRIVATE_KEY || process.argv[2] || 'C:\\Users\\Dhenenjay\\Downloads\\ee-key.json';
+const http = require('http');
 
 // Create interface for stdio
 const rl = readline.createInterface({

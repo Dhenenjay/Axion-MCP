@@ -70,7 +70,7 @@ register({
         Object.assign(aoi, fallbackRegion);
       }
       
-      region = parseAoi(aoi);
+      region = await parseAoi(aoi);
       
       // Check if we actually got a boundary (parseAoi will use it if found)
       if (region) {
@@ -81,7 +81,7 @@ register({
     
     // Fall back to provided region if no boundary found
     if (!region && fallbackRegion) {
-      region = parseAoi(fallbackRegion);
+      region = await parseAoi(fallbackRegion);
       regionType = 'polygon';
       message = placeName 
         ? `Could not find boundary for ${placeName}, using polygon instead`
@@ -93,7 +93,7 @@ register({
     }
     
     // Filter the collection
-    const col = ee.ImageCollection(datasetId)
+    const col = new ee.ImageCollection(datasetId)
       .filterDate(startDate, endDate)
       .filterBounds(region);
     
@@ -136,7 +136,7 @@ register({
   handler: async ({ placeName, datasetId, startDate, endDate }) => {
     // Use the parseAoi function with placeName
     const aoi = { placeName };
-    const region = parseAoi(aoi);
+    const region = await parseAoi(aoi);
     
     if (!region) {
       return {
@@ -148,7 +148,7 @@ register({
     }
     
     // Filter the collection
-    const col = ee.ImageCollection(datasetId)
+    const col = new ee.ImageCollection(datasetId)
       .filterDate(startDate, endDate)
       .filterBounds(region);
     

@@ -68,16 +68,19 @@ export const getDatasetVisualization = async (
     
     return new Promise((resolve) => {
       try {
-        image.getMap(visParams, (map: any) => {
-          // Check if map is undefined or null
-          if (!map) {
-            resolve({ 
-              error: 'VISUALIZATION_ERROR', 
-              message: 'Earth Engine returned null or undefined result. The dataset may not be accessible or you may need to authenticate first.' 
-            });
-            return;
-          }
-          resolve(map);
+        const map = image.getMap(visParams) as any;
+        if (!map) {
+          resolve({ 
+            error: 'VISUALIZATION_ERROR', 
+            message: 'Earth Engine returned null or undefined result. The dataset may not be accessible or you may need to authenticate first.' 
+          });
+          return;
+        }
+        // Convert the Earth Engine map object to our expected format
+        resolve({
+          url: map.urlFormat || '',
+          mapId: map.mapid || '',
+          token: map.token || map.mapid || ''
         });
       } catch (callbackError) {
         resolve({ 

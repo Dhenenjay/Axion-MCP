@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
-const readline = require('readline');
-const http = require('http');
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
+const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
+const fs = require('fs');
+const path = require('path');
 
 // Create readline interface for stdio communication
 const rl = readline.createInterface({

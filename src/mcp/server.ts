@@ -1,19 +1,42 @@
-import { createMcpServer } from '@vercel/mcp-adapter';
 import { list, get, register, z } from './registry';
 import { initEarthEngineWithSA } from '@/src/gee/client';
 
 export async function buildServer(){
   await initEarthEngineWithSA();
   await import('./tools');
-  const server = createMcpServer({
-    tools: {
-      listTools: async ()=> ({ tools: list() }),
-      callTool: async (name: string, input: any)=> {
-        const t = get(name);
-        return await t.handler(input);
-      },
+  
+  // Simple server object with direct method for tool calling
+  const server = {
+    callTool: async (name: string, args: any) => {
+      const tool = get(name);
+      if (!tool) {
+        throw new Error(`Tool not found: ${name}`);
+      }
+      const result = await tool.handler(args);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result),
+          },
+        ],
+      };
     },
-  });
+    listTools: () => {
+      const tools = list();
+      return {
+        tools: tools.map((tool) => {
+          const fullTool = get(tool.name);
+          return {
+            name: tool.name,
+            description: tool.description,
+            inputSchema: fullTool?.input || {},
+          };
+        }),
+      };
+    }
+  };
+  
   return server;
 }
 

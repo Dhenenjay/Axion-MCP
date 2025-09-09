@@ -8,7 +8,7 @@ register({
   output: z.object({ count: z.number() }),
   handler: async ({ imageId, zonesAssetId, scale }) => {
     const img = new ee.Image(imageId);
-    const zones = new ee.FeatureCollection(zonesAssetId);
+    const zones = new ee.FeatureCollection(zonesAssetId) as any;
     const out = img.reduceRegions({ collection: zones, reducer: ee.Reducer.mean(), scale: scale ?? 30 });
     const count = await out.size().getInfo();
     return { count };

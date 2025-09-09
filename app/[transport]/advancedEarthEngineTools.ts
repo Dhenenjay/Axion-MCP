@@ -141,17 +141,15 @@ export const calculateIndex = async (
     
     return new Promise((resolve) => {
       try {
-        image.getMap(visParams, (map: any) => {
-          // Check if map is undefined or null
-          if (!map) {
-            resolve({ 
-              error: 'INDEX_ERROR', 
-              message: 'Earth Engine returned null or undefined result. The dataset may not be accessible, bands may be invalid, or you may need to authenticate first.' 
-            });
-            return;
-          }
-          resolve(map);
-        });
+        const map = image.getMap(visParams);
+        if (!map) {
+          resolve({ 
+            error: 'INDEX_ERROR', 
+            message: 'Earth Engine returned null or undefined result. The dataset may not be accessible, bands may be invalid, or you may need to authenticate first.' 
+          });
+          return;
+        }
+        resolve(map);
       } catch (callbackError) {
         resolve({ 
           error: 'INDEX_ERROR', 
@@ -187,17 +185,15 @@ export const applyCloudMask = async (
     
     return new Promise((resolve) => {
       try {
-        maskedImage.getMap(visParams, (map: any) => {
-          // Check if map is undefined or null
-          if (!map) {
-            resolve({ 
-              error: 'CLOUD_MASK_ERROR', 
-              message: 'Earth Engine returned null or undefined result. The dataset may not be accessible or you may need to authenticate first.' 
-            });
-            return;
-          }
-          resolve(map);
-        });
+        const map = maskedImage.getMap(visParams);
+        if (!map) {
+          resolve({ 
+            error: 'CLOUD_MASK_ERROR', 
+            message: 'Earth Engine returned null or undefined result. The dataset may not be accessible or you may need to authenticate first.' 
+          });
+          return;
+        }
+        resolve(map);
       } catch (callbackError) {
         resolve({ 
           error: 'CLOUD_MASK_ERROR', 
@@ -273,17 +269,15 @@ export const createComposite = async (
     
     return new Promise((resolve) => {
       try {
-        composite.getMap(visParams, (map: any) => {
-          // Check if map is undefined or null
-          if (!map) {
-            resolve({ 
-              error: 'COMPOSITE_ERROR', 
-              message: 'Earth Engine returned null or undefined result. The collection may be empty, filters may be too restrictive, or you may need to authenticate first.' 
-            });
-            return;
-          }
-          resolve(map);
-        });
+        const map = composite.getMap(visParams);
+        if (!map) {
+          resolve({ 
+            error: 'COMPOSITE_ERROR', 
+            message: 'Earth Engine returned null or undefined result. The collection may be empty, filters may be too restrictive, or you may need to authenticate first.' 
+          });
+          return;
+        }
+        resolve(map);
       } catch (callbackError) {
         resolve({ 
           error: 'COMPOSITE_ERROR', 
@@ -523,17 +517,15 @@ export const applyExpression = async (
     
     return new Promise((resolve) => {
       try {
-        expressionResult.getMap(visParams, (map: any) => {
-          // Check if map is undefined or null
-          if (!map) {
-            resolve({ 
-              error: 'EXPRESSION_ERROR', 
-              message: 'Earth Engine returned null or undefined result. The expression may be invalid, the dataset may not be accessible, or you may need to authenticate first.' 
-            });
-            return;
-          }
-          resolve(map);
-        });
+        const map = expressionResult.getMap(visParams);
+        if (!map) {
+          resolve({ 
+            error: 'EXPRESSION_ERROR', 
+            message: 'Earth Engine returned null or undefined result. The expression may be invalid, the dataset may not be accessible, or you may need to authenticate first.' 
+          });
+          return;
+        }
+        resolve(map);
       } catch (callbackError) {
         resolve({ 
           error: 'EXPRESSION_ERROR', 

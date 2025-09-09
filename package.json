@@ -16,9 +16,11 @@
         "test:health": "curl http://localhost:3000/api/health"
     },
     "dependencies": {
+        "@google-cloud/storage": "^7.17.0",
         "@google/earthengine": "^1.5.14",
         "@modelcontextprotocol/sdk": "^1.11.1",
         "@vercel/mcp-adapter": "0.3.1",
+        "cross-fetch": "^4.1.0",
         "google-auth-library": "^10.3.0",
         "googleapis": "^159.0.0",
         "ioredis": "^5.7.0",
@@ -30,6 +32,7 @@
         "redis": "^4.7.0",
         "undici": "^7.15.0",
         "vm2": "^3.9.19",
+        "xmlhttprequest": "^1.8.0",
         "yaml": "^2.8.1",
         "zod": "^3.24.4"
     },
