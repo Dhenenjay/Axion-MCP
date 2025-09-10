@@ -50,3 +50,6 @@ next-env.d.ts
 mcp*.log
 server.log
 *.log
+
+# Temporary sync files
+.node-xmlhttprequest-sync-*
