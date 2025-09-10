@@ -1,0 +1,86 @@
+{
+  "training_polygons": {
+    "urban_areas": [
+      {
+        "polygon_id": "URB_001",
+        "coordinates": [
+          [
+            25.7617,
+            -80.1918
+          ],
+          [
+            25.7717,
+            -80.1918
+          ],
+          [
+            25.7717,
+            -80.2018
+          ],
+          [
+            25.7617,
+            -80.2018
+          ]
+        ],
+        "area_hectares": 45.2,
+        "sub_class": "residential_high_density",
+        "samples_collected": 150
+      }
+    ],
+    "vegetation_areas": [
+      {
+        "polygon_id": "VEG_001",
+        "coordinates": [
+          [
+            25.7817,
+            -80.2118
+          ],
+          [
+            25.7917,
+            -80.2118
+          ],
+          [
+            25.7917,
+            -80.2218
+          ],
+          [
+            25.7817,
+            -80.2218
+          ]
+        ],
+        "area_hectares": 82.5,
+        "sub_class": "mangrove",
+        "samples_collected": 200
+      }
+    ],
+    "validation_metrics": {
+      "overall_accuracy": 0.89,
+      "kappa_coefficient": 0.86,
+      "confusion_matrix": {
+        "urban": {
+          "urban": 145,
+          "water": 2,
+          "vegetation": 8,
+          "bare_soil": 5
+        },
+        "water": {
+          "urban": 1,
+          "water": 198,
+          "vegetation": 1,
+          "bare_soil": 0
+        },
+        "vegetation": {
+          "urban": 5,
+          "water": 2,
+          "vegetation": 185,
+          "bare_soil": 8
+        },
+        "bare_soil": {
+          "urban": 3,
+          "water": 0,
+          "vegetation": 7,
+          "bare_soil": 90
+        }
+      }
+    }
+  }
+}

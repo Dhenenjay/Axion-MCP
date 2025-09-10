@@ -1,0 +1,40 @@
+{
+  "fields": {
+    "CA_001": {
+      "irrigation_events": [
+        {
+          "date": "2024-03-15",
+          "amount_mm": 25,
+          "method": "drip"
+        },
+        {
+          "date": "2024-04-20",
+          "amount_mm": 30,
+          "method": "drip"
+        },
+        {
+          "date": "2024-05-25",
+          "amount_mm": 35,
+          "method": "sprinkler"
+        }
+      ],
+      "fertilizer_applications": [
+        {
+          "date": "2024-03-01",
+          "type": "nitrogen",
+          "amount_kg_per_hectare": 120
+        },
+        {
+          "date": "2024-04-15",
+          "type": "phosphorus",
+          "amount_kg_per_hectare": 60
+        }
+      ],
+      "weather_station_data": {
+        "avg_temperature_c": 22.5,
+        "total_rainfall_mm": 250,
+        "solar_radiation_mj_m2": 18.5
+      }
+    }
+  }
+}

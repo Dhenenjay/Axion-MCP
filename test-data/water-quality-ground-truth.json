@@ -1,0 +1,274 @@
+{
+  "metadata": {
+    "type": "water_quality",
+    "description": "Water body quality monitoring with pollution indicators and algae bloom detection",
+    "date_created": "2025-01-10",
+    "coordinate_system": "WGS84",
+    "units": {
+      "chlorophyll": "μg/L",
+      "turbidity": "NTU",
+      "temperature": "celsius",
+      "dissolved_oxygen": "mg/L",
+      "ph": "pH_units"
+    }
+  },
+  "validation_points": [
+    {
+      "id": "WQ001",
+      "location": {
+        "lat": 37.8044,
+        "lon": -122.2712,
+        "name": "San Francisco Bay",
+        "waterBodyType": "estuary"
+      },
+      "date": "2024-03-15",
+      "measurements": {
+        "chlorophyll_a": 25.5,
+        "turbidity": 18.2,
+        "temperature": 14.5,
+        "dissolved_oxygen": 7.2,
+        "ph": 8.1,
+        "salinity": 28,
+        "nitrate": 2.5,
+        "phosphate": 0.8
+      },
+      "indices": {
+        "ndwi": 0.65,
+        "fai": 0.12,
+        "chl_oci": 22.3,
+        "turbidity_index": 0.35
+      },
+      "waterQuality": "MODERATE",
+      "issues": ["moderate_algae", "urban_runoff"],
+      "trophicState": "mesotrophic"
+    },
+    {
+      "id": "WQ002",
+      "location": {
+        "lat": 41.8781,
+        "lon": -87.6298,
+        "name": "Lake Michigan - Chicago",
+        "waterBodyType": "lake"
+      },
+      "date": "2024-07-20",
+      "measurements": {
+        "chlorophyll_a": 45.8,
+        "turbidity": 25.5,
+        "temperature": 22.3,
+        "dissolved_oxygen": 5.8,
+        "ph": 8.4,
+        "total_phosphorus": 0.12,
+        "secchi_depth": 1.2
+      },
+      "indices": {
+        "ndwi": 0.72,
+        "fai": 0.28,
+        "chl_oci": 42.1,
+        "turbidity_index": 0.48
+      },
+      "waterQuality": "POOR",
+      "issues": ["algae_bloom", "eutrophication"],
+      "trophicState": "eutrophic",
+      "algaeType": "cyanobacteria"
+    },
+    {
+      "id": "WQ003",
+      "location": {
+        "lat": 25.0343,
+        "lon": -77.3963,
+        "name": "Bahamas Coastal Waters",
+        "waterBodyType": "coastal"
+      },
+      "date": "2024-02-10",
+      "measurements": {
+        "chlorophyll_a": 0.8,
+        "turbidity": 0.5,
+        "temperature": 24.5,
+        "dissolved_oxygen": 8.5,
+        "ph": 8.2,
+        "salinity": 35,
+        "coral_coverage": 65
+      },
+      "indices": {
+        "ndwi": 0.85,
+        "fai": -0.02,
+        "water_clarity": 0.95,
+        "coral_stress": 0.15
+      },
+      "waterQuality": "EXCELLENT",
+      "issues": [],
+      "trophicState": "oligotrophic"
+    },
+    {
+      "id": "WQ004",
+      "location": {
+        "lat": 30.3322,
+        "lon": -81.6557,
+        "name": "St. Johns River - Jacksonville",
+        "waterBodyType": "river"
+      },
+      "date": "2024-08-05",
+      "measurements": {
+        "chlorophyll_a": 68.5,
+        "turbidity": 35.2,
+        "temperature": 28.5,
+        "dissolved_oxygen": 4.2,
+        "ph": 7.8,
+        "total_nitrogen": 3.5,
+        "total_phosphorus": 0.25
+      },
+      "indices": {
+        "ndwi": 0.58,
+        "fai": 0.42,
+        "chl_oci": 65.3,
+        "turbidity_index": 0.62
+      },
+      "waterQuality": "CRITICAL",
+      "issues": ["severe_algae_bloom", "hypoxia", "agricultural_runoff"],
+      "trophicState": "hypereutrophic",
+      "algaeType": "mixed_harmful"
+    },
+    {
+      "id": "WQ005",
+      "location": {
+        "lat": 47.2529,
+        "lon": -122.4443,
+        "name": "Puget Sound",
+        "waterBodyType": "sound"
+      },
+      "date": "2024-01-25",
+      "measurements": {
+        "chlorophyll_a": 8.2,
+        "turbidity": 6.5,
+        "temperature": 9.5,
+        "dissolved_oxygen": 9.2,
+        "ph": 7.9,
+        "salinity": 30,
+        "heavy_metals": 0.02
+      },
+      "indices": {
+        "ndwi": 0.78,
+        "fai": 0.05,
+        "water_clarity": 0.75,
+        "pollution_index": 0.18
+      },
+      "waterQuality": "GOOD",
+      "issues": ["minor_urban_pollution"],
+      "trophicState": "mesotrophic"
+    }
+  ],
+  "calibration_data": {
+    "quality_thresholds": {
+      "excellent": {
+        "chlorophyll": [0, 5],
+        "turbidity": [0, 5],
+        "dissolved_oxygen": [7, 12]
+      },
+      "good": {
+        "chlorophyll": [5, 15],
+        "turbidity": [5, 10],
+        "dissolved_oxygen": [6, 9]
+      },
+      "moderate": {
+        "chlorophyll": [15, 30],
+        "turbidity": [10, 20],
+        "dissolved_oxygen": [5, 7]
+      },
+      "poor": {
+        "chlorophyll": [30, 60],
+        "turbidity": [20, 30],
+        "dissolved_oxygen": [3, 5]
+      },
+      "critical": {
+        "chlorophyll": [60, 200],
+        "turbidity": [30, 100],
+        "dissolved_oxygen": [0, 3]
+      }
+    },
+    "trophic_states": {
+      "oligotrophic": {
+        "chlorophyll": [0, 8],
+        "phosphorus": [0, 0.01],
+        "transparency": [4, 10]
+      },
+      "mesotrophic": {
+        "chlorophyll": [8, 25],
+        "phosphorus": [0.01, 0.03],
+        "transparency": [2, 4]
+      },
+      "eutrophic": {
+        "chlorophyll": [25, 75],
+        "phosphorus": [0.03, 0.1],
+        "transparency": [0.5, 2]
+      },
+      "hypereutrophic": {
+        "chlorophyll": [75, 200],
+        "phosphorus": [0.1, 1],
+        "transparency": [0, 0.5]
+      }
+    },
+    "remote_sensing_algorithms": {
+      "chlorophyll": {
+        "algorithm": "OC3",
+        "bands": ["B3", "B4", "B5"],
+        "calibration_factor": 1.15
+      },
+      "turbidity": {
+        "algorithm": "NECHAD",
+        "bands": ["B4", "B8"],
+        "calibration_factor": 0.92
+      },
+      "algae_bloom": {
+        "algorithm": "FAI",
+        "bands": ["B4", "B5", "B8A"],
+        "threshold": 0.15
+      }
+    }
+  },
+  "test_scenarios": [
+    {
+      "name": "harmful_algae_bloom",
+      "parameters": {
+        "chlorophyll": [60, 150],
+        "fai": [0.3, 0.6],
+        "temperature": [25, 30],
+        "nutrients": "excessive"
+      },
+      "expected_alert": "CRITICAL",
+      "health_risk": "HIGH"
+    },
+    {
+      "name": "industrial_pollution",
+      "parameters": {
+        "turbidity": [40, 80],
+        "heavy_metals": [0.1, 0.5],
+        "ph": [5, 6.5],
+        "dissolved_oxygen": [2, 4]
+      },
+      "expected_quality": "CRITICAL",
+      "remediation": "immediate"
+    },
+    {
+      "name": "seasonal_turnover",
+      "parameters": {
+        "temperature_gradient": 5,
+        "mixing_depth": 20,
+        "oxygen_stratification": true
+      },
+      "expected_quality": "MODERATE",
+      "duration": "2-3 weeks"
+    }
+  ],
+  "validation_metrics": {
+    "chlorophyll_rmse": 3.5,
+    "turbidity_rmse": 2.8,
+    "classification_accuracy": 0.88,
+    "bloom_detection_accuracy": 0.92,
+    "lead_time_days": 7
+  },
+  "monitoring_frequency": {
+    "routine": "weekly",
+    "algae_season": "daily",
+    "post_event": "hourly"
+  }
+}

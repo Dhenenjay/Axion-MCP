@@ -1,0 +1,40 @@
+{
+  "study_sites": {
+    "pacific_northwest_forest": {
+      "location": {
+        "lat": 47.6062,
+        "lon": -122.3321
+      },
+      "ecosystem_type": "temperate_coniferous",
+      "carbon_stock_tons_per_hectare": 285,
+      "annual_sequestration_rate": 4.2,
+      "soil_carbon_tons_per_hectare": 95,
+      "species_diversity": {
+        "total_species": 24,
+        "dominant_species": [
+          "Douglas Fir",
+          "Western Hemlock",
+          "Red Cedar"
+        ],
+        "shannon_index": 2.8,
+        "simpson_index": 0.85,
+        "rare_species": [
+          "Pacific Yew",
+          "Vine Maple"
+        ]
+      },
+      "disturbance_history": [
+        {
+          "year": 2018,
+          "type": "selective_logging",
+          "area_hectares": 5.2
+        },
+        {
+          "year": 2020,
+          "type": "windthrow",
+          "area_hectares": 2.1
+        }
+      ]
+    }
+  }
+}

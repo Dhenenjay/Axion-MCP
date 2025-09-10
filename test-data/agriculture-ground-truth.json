@@ -1,0 +1,267 @@
+{
+  "metadata": {
+    "type": "crop_monitoring",
+    "description": "Agricultural field data with crop types, yields, and growth conditions",
+    "date_created": "2025-01-10",
+    "coordinate_system": "WGS84",
+    "units": {
+      "yield": "tons/hectare",
+      "nitrogen": "kg/hectare",
+      "irrigation": "mm/week",
+      "fieldSize": "hectares"
+    }
+  },
+  "validation_points": [
+    {
+      "id": "AG001",
+      "location": {
+        "lat": 40.0150,
+        "lon": -105.2705,
+        "name": "Colorado Wheat Field",
+        "polygon": [
+          [-105.28, 40.02],
+          [-105.26, 40.02],
+          [-105.26, 40.01],
+          [-105.28, 40.01]
+        ]
+      },
+      "cropType": "wheat",
+      "plantingDate": "2023-10-15",
+      "harvestDate": "2024-07-20",
+      "fieldSize": 120,
+      "conditions": {
+        "soilType": "loam",
+        "irrigationType": "center_pivot",
+        "fertilizer": {
+          "nitrogen": 150,
+          "phosphorus": 60,
+          "potassium": 40
+        },
+        "pestApplication": 3,
+        "averageNDVI": 0.72,
+        "peakNDVI": 0.85,
+        "averageNDWI": 0.25,
+        "growingDegreeDays": 2100
+      },
+      "actualYield": 8.5,
+      "yieldQuality": "premium",
+      "issues": ["minor_pest_pressure"],
+      "profitMargin": 0.35
+    },
+    {
+      "id": "AG002",
+      "location": {
+        "lat": 41.5868,
+        "lon": -93.6250,
+        "name": "Iowa Corn Field",
+        "polygon": [
+          [-93.64, 41.59],
+          [-93.61, 41.59],
+          [-93.61, 41.58],
+          [-93.64, 41.58]
+        ]
+      },
+      "cropType": "corn",
+      "plantingDate": "2024-04-25",
+      "harvestDate": "2024-10-15",
+      "fieldSize": 200,
+      "conditions": {
+        "soilType": "silt_loam",
+        "irrigationType": "rainfed",
+        "fertilizer": {
+          "nitrogen": 200,
+          "phosphorus": 80,
+          "potassium": 60
+        },
+        "pestApplication": 5,
+        "averageNDVI": 0.78,
+        "peakNDVI": 0.92,
+        "averageNDWI": 0.30,
+        "growingDegreeDays": 2800,
+        "rainfall": 650
+      },
+      "actualYield": 12.3,
+      "yieldQuality": "standard",
+      "issues": ["drought_stress_july"],
+      "profitMargin": 0.28
+    },
+    {
+      "id": "AG003",
+      "location": {
+        "lat": 36.7783,
+        "lon": -119.4179,
+        "name": "California Almond Orchard",
+        "polygon": [
+          [-119.43, 36.78],
+          [-119.40, 36.78],
+          [-119.40, 36.77],
+          [-119.43, 36.77]
+        ]
+      },
+      "cropType": "almonds",
+      "plantingDate": "2019-02-01",
+      "fieldSize": 80,
+      "conditions": {
+        "soilType": "sandy_loam",
+        "irrigationType": "drip",
+        "waterUsage": 1200,
+        "fertilizer": {
+          "nitrogen": 180,
+          "phosphorus": 50,
+          "potassium": 150
+        },
+        "averageNDVI": 0.65,
+        "peakNDVI": 0.75,
+        "averageNDWI": 0.18,
+        "canopyTemperature": 28
+      },
+      "actualYield": 2.8,
+      "yieldQuality": "premium",
+      "issues": ["water_stress", "nutrient_deficiency"],
+      "profitMargin": 0.42
+    },
+    {
+      "id": "AG004",
+      "location": {
+        "lat": 31.5497,
+        "lon": 74.3436,
+        "name": "Punjab Rice Field",
+        "polygon": [
+          [74.34, 31.55],
+          [74.35, 31.55],
+          [74.35, 31.54],
+          [74.34, 31.54]
+        ]
+      },
+      "cropType": "rice",
+      "plantingDate": "2024-06-15",
+      "harvestDate": "2024-10-30",
+      "fieldSize": 50,
+      "conditions": {
+        "soilType": "clay",
+        "irrigationType": "flood",
+        "waterUsage": 2000,
+        "fertilizer": {
+          "nitrogen": 120,
+          "phosphorus": 40,
+          "potassium": 30
+        },
+        "averageNDVI": 0.82,
+        "peakNDVI": 0.90,
+        "averageNDWI": 0.45,
+        "waterTableDepth": 1.5
+      },
+      "actualYield": 7.2,
+      "yieldQuality": "standard",
+      "issues": ["excessive_water_early_season"],
+      "profitMargin": 0.25
+    },
+    {
+      "id": "AG005",
+      "location": {
+        "lat": 52.5200,
+        "lon": 13.4050,
+        "name": "Germany Potato Field",
+        "polygon": [
+          [13.40, 52.52],
+          [13.41, 52.52],
+          [13.41, 52.51],
+          [13.40, 52.51]
+        ]
+      },
+      "cropType": "potato",
+      "plantingDate": "2024-04-01",
+      "harvestDate": "2024-09-15",
+      "fieldSize": 30,
+      "conditions": {
+        "soilType": "sandy",
+        "irrigationType": "sprinkler",
+        "fertilizer": {
+          "nitrogen": 180,
+          "phosphorus": 90,
+          "potassium": 240
+        },
+        "pestApplication": 8,
+        "averageNDVI": 0.68,
+        "peakNDVI": 0.80,
+        "averageNDWI": 0.22,
+        "diseasePresence": "late_blight_controlled"
+      },
+      "actualYield": 45,
+      "yieldQuality": "processing",
+      "issues": ["late_blight", "colorado_beetle"],
+      "profitMargin": 0.30
+    }
+  ],
+  "calibration_data": {
+    "crop_parameters": {
+      "wheat": {
+        "optimal_ndvi_range": [0.70, 0.90],
+        "water_requirement": 450,
+        "growing_season_days": 240,
+        "critical_stages": ["tillering", "heading", "grain_filling"]
+      },
+      "corn": {
+        "optimal_ndvi_range": [0.75, 0.95],
+        "water_requirement": 600,
+        "growing_season_days": 150,
+        "critical_stages": ["V6", "tasseling", "grain_filling"]
+      },
+      "rice": {
+        "optimal_ndvi_range": [0.80, 0.92],
+        "water_requirement": 1500,
+        "growing_season_days": 135,
+        "critical_stages": ["transplanting", "tillering", "flowering"]
+      }
+    },
+    "stress_indicators": {
+      "water_stress": {
+        "ndwi_threshold": 0.15,
+        "canopy_temp_increase": 3
+      },
+      "nutrient_stress": {
+        "ndvi_decline_rate": 0.05,
+        "chlorophyll_threshold": 35
+      },
+      "pest_damage": {
+        "ndvi_variability": 0.15,
+        "affected_area_threshold": 0.10
+      }
+    }
+  },
+  "test_scenarios": [
+    {
+      "name": "drought_stress_detection",
+      "parameters": {
+        "ndwi_range": [0.05, 0.15],
+        "rainfall_deficit": 200,
+        "consecutive_dry_days": 20
+      },
+      "expected_yield_reduction": 0.30
+    },
+    {
+      "name": "optimal_growth_conditions",
+      "parameters": {
+        "ndvi_range": [0.80, 0.95],
+        "ndwi_range": [0.25, 0.35],
+        "gdd_accumulation": "normal"
+      },
+      "expected_yield_increase": 0.15
+    },
+    {
+      "name": "pest_outbreak",
+      "parameters": {
+        "ndvi_variability": 0.25,
+        "affected_area": 0.30,
+        "spread_rate": "rapid"
+      },
+      "expected_yield_reduction": 0.40
+    }
+  ],
+  "validation_metrics": {
+    "yield_prediction_accuracy": 0.85,
+    "stress_detection_accuracy": 0.90,
+    "false_alarm_rate": 0.10,
+    "lead_time_days": 14
+  }
+}

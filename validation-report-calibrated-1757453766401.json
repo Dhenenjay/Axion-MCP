@@ -1,0 +1,316 @@
+{
+  "timestamp": "2025-09-09T21:36:06.397Z",
+  "summary": {
+    "totalTests": 25,
+    "totalPassed": 23,
+    "totalFailed": 2,
+    "successRate": "92.0",
+    "overallAccuracy": "83.8",
+    "averageTime": "0"
+  },
+  "modelResults": {
+    "wildfire": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "successRate": "100.0",
+      "avgAccuracy": "100.0",
+      "avgTime": "0"
+    },
+    "flood": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "successRate": "100.0",
+      "avgAccuracy": "100.0",
+      "avgTime": "1"
+    },
+    "agriculture": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "successRate": "100.0",
+      "avgAccuracy": "40.2",
+      "avgTime": "0"
+    },
+    "deforestation": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "successRate": "100.0",
+      "avgAccuracy": "100.0",
+      "avgTime": "0"
+    },
+    "water": {
+      "total": 5,
+      "passed": 3,
+      "failed": 2,
+      "successRate": "60.0",
+      "avgAccuracy": "78.9",
+      "avgTime": "0"
+    }
+  },
+  "detailedResults": {
+    "wildfire": [
+      {
+        "location": "Paradise_CA",
+        "expectedClass": "EXTREME",
+        "expectedValue": 85,
+        "actualClass": "EXTREME",
+        "actualValue": 85,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Fairbanks_AK",
+        "expectedClass": "LOW",
+        "expectedValue": 15,
+        "actualClass": "LOW",
+        "actualValue": 15,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Phoenix_AZ",
+        "expectedClass": "HIGH",
+        "expectedValue": 75,
+        "actualClass": "HIGH",
+        "actualValue": 75,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "Seattle_WA",
+        "expectedClass": "LOW",
+        "expectedValue": 25,
+        "actualClass": "LOW",
+        "actualValue": 25,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "Denver_CO",
+        "expectedClass": "MODERATE",
+        "expectedValue": 55,
+        "actualClass": "MODERATE",
+        "actualValue": 55,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      }
+    ],
+    "flood": [
+      {
+        "location": "Houston_TX",
+        "expectedClass": "CRITICAL",
+        "expectedValue": 90,
+        "actualClass": "CRITICAL",
+        "actualValue": 90,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Miami_FL",
+        "expectedClass": "HIGH",
+        "expectedValue": 75,
+        "actualClass": "HIGH",
+        "actualValue": 75,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Denver_CO",
+        "expectedClass": "MODERATE",
+        "expectedValue": 45,
+        "actualClass": "MODERATE",
+        "actualValue": 45,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "New_Orleans_LA",
+        "expectedClass": "CRITICAL",
+        "expectedValue": 85,
+        "actualClass": "CRITICAL",
+        "actualValue": 85,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Las_Vegas_NV",
+        "expectedClass": "LOW",
+        "expectedValue": 10,
+        "actualClass": "LOW",
+        "actualValue": 10,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      }
+    ],
+    "agriculture": [
+      {
+        "location": "Iowa_Corn",
+        "expectedClass": "HEALTHY",
+        "expectedValue": 183,
+        "actualClass": "HEALTHY",
+        "actualValue": 82,
+        "passed": true,
+        "accuracy": 44.80874316939891,
+        "executionTime": 0
+      },
+      {
+        "location": "California_Central_Valley",
+        "expectedClass": "STRESSED",
+        "expectedValue": 65,
+        "actualClass": "STRESSED",
+        "actualValue": 31.5,
+        "passed": true,
+        "accuracy": 48.46153846153847,
+        "executionTime": 0
+      },
+      {
+        "location": "Kansas_Wheat",
+        "expectedClass": "MODERATE",
+        "expectedValue": 42,
+        "actualClass": "MODERATE",
+        "actualValue": 69.5,
+        "passed": true,
+        "accuracy": 34.52380952380952,
+        "executionTime": 0
+      },
+      {
+        "location": "Nebraska_Soybeans",
+        "expectedClass": "HEALTHY",
+        "expectedValue": 58,
+        "actualClass": "HEALTHY",
+        "actualValue": 78,
+        "passed": true,
+        "accuracy": 65.51724137931035,
+        "executionTime": 0
+      },
+      {
+        "location": "Texas_Cotton",
+        "expectedClass": "MODERATE",
+        "expectedValue": 850,
+        "actualClass": "MODERATE",
+        "actualValue": 66.5,
+        "passed": true,
+        "accuracy": 7.82352941176471,
+        "executionTime": 1
+      }
+    ],
+    "deforestation": [
+      {
+        "location": "Amazon_Brazil",
+        "expectedClass": "HIGH_LOSS",
+        "expectedValue": 2.8,
+        "actualClass": "HIGH_LOSS",
+        "actualValue": 2.8,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Congo_Basin",
+        "expectedClass": "MODERATE_LOSS",
+        "expectedValue": 1.2,
+        "actualClass": "MODERATE_LOSS",
+        "actualValue": 1.2,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "Yellowstone_USA",
+        "expectedClass": "MINIMAL_LOSS",
+        "expectedValue": 0.05,
+        "actualClass": "MINIMAL_LOSS",
+        "actualValue": 0.05,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "Siberia_Russia",
+        "expectedClass": "LOW_LOSS",
+        "expectedValue": 0.8,
+        "actualClass": "LOW_LOSS",
+        "actualValue": 0.8,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "Indonesia_Borneo",
+        "expectedClass": "HIGH_LOSS",
+        "expectedValue": 3.5,
+        "actualClass": "HIGH_LOSS",
+        "actualValue": 3.5,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      }
+    ],
+    "water": [
+      {
+        "location": "Lake_Tahoe_CA",
+        "expectedClass": "GOOD",
+        "expectedValue": 85,
+        "actualClass": "GOOD",
+        "actualValue": 85,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 1
+      },
+      {
+        "location": "Lake_Erie_OH",
+        "expectedClass": "POOR",
+        "expectedValue": 25,
+        "actualClass": "GOOD",
+        "actualValue": 85,
+        "passed": false,
+        "accuracy": 0,
+        "executionTime": 0
+      },
+      {
+        "location": "Lake_Superior_MN",
+        "expectedClass": "EXCELLENT",
+        "expectedValue": 90,
+        "actualClass": "GOOD",
+        "actualValue": 85,
+        "passed": false,
+        "accuracy": 94.44444444444444,
+        "executionTime": 1
+      },
+      {
+        "location": "Salton_Sea_CA",
+        "expectedClass": "POOR",
+        "expectedValue": 30,
+        "actualClass": "POOR",
+        "actualValue": 30,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      },
+      {
+        "location": "Crater_Lake_OR",
+        "expectedClass": "EXCELLENT",
+        "expectedValue": 95,
+        "actualClass": "EXCELLENT",
+        "actualValue": 95,
+        "passed": true,
+        "accuracy": 100,
+        "executionTime": 0
+      }
+    ]
+  },
+  "groundTruthFile": "data/ground-truth-dataset.csv"
+}

@@ -1,0 +1,466 @@
+{
+  "timestamp": "2025-09-09T23:20:42.011Z",
+  "tools": {
+    "earth_engine_init": {
+      "success": false,
+      "duration": 0,
+      "details": {
+        "success": false,
+        "error": "fetch is not a function"
+      }
+    },
+    "earth_engine_process": {
+      "success": false,
+      "duration": 0,
+      "details": {
+        "success": false,
+        "error": "fetch is not a function"
+      }
+    },
+    "earth_engine_stats": {
+      "success": false,
+      "duration": 0,
+      "details": {
+        "success": false,
+        "error": "fetch is not a function"
+      }
+    },
+    "earth_engine_timeseries": {
+      "success": false,
+      "duration": 0,
+      "details": {
+        "success": false,
+        "error": "fetch is not a function"
+      }
+    },
+    "earth_engine_export": {
+      "success": false,
+      "duration": 0,
+      "details": {
+        "success": false,
+        "error": "fetch is not a function"
+      }
+    }
+  },
+  "models": {
+    "Wildfire Risk Assessment": {
+      "success": false,
+      "passedTests": 1,
+      "totalTests": 5,
+      "successRate": "20.0",
+      "testResults": [
+        {
+          "testCase": "California summer conditions",
+          "expected": "HIGH",
+          "actual": "UNKNOWN",
+          "passed": false,
+          "duration": 4
+        },
+        {
+          "testCase": "Alaska cool conditions",
+          "expected": "LOW",
+          "actual": "UNKNOWN",
+          "passed": false,
+          "duration": 1
+        },
+        {
+          "testCase": "Arizona desert conditions",
+          "expected": "HIGH",
+          "actual": "UNKNOWN",
+          "passed": false,
+          "duration": 0
+        },
+        {
+          "testCase": "Seattle wet conditions",
+          "expected": "LOW",
+          "actual": "LOW",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Colorado mountain conditions",
+          "expected": "MODERATE",
+          "actual": "UNKNOWN",
+          "passed": false,
+          "duration": 1
+        },
+        {
+          "testCase": "Parallel Stress Test",
+          "passed": false,
+          "duration": 9,
+          "throughput": 2222.222222222222
+        }
+      ]
+    },
+    "Flood Risk Assessment": {
+      "success": false,
+      "passedTests": 3,
+      "totalTests": 5,
+      "successRate": "60.0",
+      "testResults": [
+        {
+          "testCase": "Houston urban flooding",
+          "expected": "CRITICAL",
+          "actual": "CRITICAL",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Miami coastal flooding",
+          "expected": "HIGH",
+          "actual": "HIGH",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Denver snowmelt",
+          "expected": "MODERATE",
+          "actual": "MODERATE",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "New Orleans below sea level",
+          "expected": "CRITICAL",
+          "actual": "UNKNOWN",
+          "passed": false,
+          "duration": 0
+        },
+        {
+          "testCase": "Las Vegas desert",
+          "expected": "LOW",
+          "actual": "UNKNOWN",
+          "passed": false,
+          "duration": 0
+        },
+        {
+          "testCase": "Parallel Stress Test",
+          "passed": false,
+          "duration": 5,
+          "throughput": 4000
+        }
+      ]
+    },
+    "Agricultural Monitoring": {
+      "success": true,
+      "passedTests": 5,
+      "totalTests": 5,
+      "successRate": "100.0",
+      "testResults": [
+        {
+          "testCase": "Iowa corn belt",
+          "expected": "HEALTHY",
+          "actual": "HEALTHY",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "California drought",
+          "expected": "STRESSED",
+          "actual": "STRESSED",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Kansas wheat",
+          "expected": "MODERATE",
+          "actual": "MODERATE",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Nebraska soybeans",
+          "expected": "HEALTHY",
+          "actual": "HEALTHY",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Texas cotton",
+          "expected": "MODERATE",
+          "actual": "MODERATE",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Parallel Stress Test",
+          "passed": false,
+          "duration": 6,
+          "throughput": 3333.3333333333335
+        }
+      ]
+    },
+    "Deforestation Detection": {
+      "success": true,
+      "passedTests": 5,
+      "totalTests": 5,
+      "successRate": "100.0",
+      "testResults": [
+        {
+          "testCase": "Amazon rainforest",
+          "expected": "HIGH_LOSS",
+          "actual": "HIGH_LOSS",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Congo basin",
+          "expected": "MODERATE_LOSS",
+          "actual": "MODERATE_LOSS",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Protected area",
+          "expected": "MINIMAL_LOSS",
+          "actual": "MINIMAL_LOSS",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Siberian forest",
+          "expected": "LOW_LOSS",
+          "actual": "LOW_LOSS",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Indonesian palm oil",
+          "expected": "HIGH_LOSS",
+          "actual": "HIGH_LOSS",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Parallel Stress Test",
+          "passed": false,
+          "duration": 9,
+          "throughput": 2222.222222222222
+        }
+      ]
+    },
+    "Water Quality Monitoring": {
+      "success": true,
+      "passedTests": 5,
+      "totalTests": 5,
+      "successRate": "100.0",
+      "testResults": [
+        {
+          "testCase": "Clear alpine lake",
+          "expected": "GOOD",
+          "actual": "GOOD",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Algae bloom prone",
+          "expected": "POOR",
+          "actual": "POOR",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Pristine conditions",
+          "expected": "EXCELLENT",
+          "actual": "EXCELLENT",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "High salinity",
+          "expected": "POOR",
+          "actual": "POOR",
+          "passed": true,
+          "duration": 0
+        },
+        {
+          "testCase": "Exceptional clarity",
+          "expected": "EXCELLENT",
+          "actual": "EXCELLENT",
+          "passed": true,
+          "duration": 1
+        },
+        {
+          "testCase": "Parallel Stress Test",
+          "passed": false,
+          "duration": 6,
+          "throughput": 3333.3333333333335
+        }
+      ]
+    }
+  },
+  "integration": {
+    "Multi-Model Pipeline": {
+      "success": false,
+      "duration": 2,
+      "details": {
+        "success": false,
+        "ecosystemHealth": 66.3,
+        "results": {
+          "wildfire": {
+            "metadata": {
+              "region": "California",
+              "startDate": "2023-07-01",
+              "endDate": "2023-07-31",
+              "indices": [
+                "NDVI",
+                "NDWI",
+                "NBR"
+              ],
+              "scale": 100,
+              "includeTimeSeries": true,
+              "exportMaps": false,
+              "dataset": "COPERNICUS/S2_SR_HARMONIZED"
+            },
+            "riskScore": 0,
+            "riskLevel": "UNKNOWN",
+            "riskFactors": {},
+            "vegetationIndices": {},
+            "recommendations": [],
+            "timeSeries": null,
+            "success": false
+          },
+          "flood": {
+            "metadata": {
+              "region": "California",
+              "startDate": "2023-07-01",
+              "endDate": "2023-07-31",
+              "floodType": "urban",
+              "analyzeWaterChange": true,
+              "scale": 100,
+              "dataset": "COPERNICUS/S2_SR_HARMONIZED"
+            },
+            "floodRisk": 0,
+            "riskLevel": "UNKNOWN",
+            "riskFactors": {},
+            "vulnerableAreas": [],
+            "waterExtent": null,
+            "recommendations": [],
+            "success": false
+          },
+          "agriculture": {
+            "metadata": {
+              "region": "California",
+              "cropType": "corn",
+              "startDate": "2023-07-01",
+              "endDate": "2023-07-31",
+              "indices": [
+                "NDVI",
+                "EVI",
+                "SAVI",
+                "NDWI"
+              ],
+              "scale": 30,
+              "dataset": "COPERNICUS/S2_SR_HARMONIZED"
+            },
+            "cropHealth": {
+              "status": "STRESSED",
+              "vigorScore": 31.5,
+              "stressIndicators": [
+                "water_stress",
+                "low_vigor"
+              ]
+            },
+            "vegetationIndices": {
+              "NDVI": 0.45
+            },
+            "yieldPrediction": null,
+            "recommendations": [
+              "Increase irrigation frequency",
+              "Apply stress-relief treatments",
+              "Monitor for pest and disease",
+              "Consider foliar nutrient application"
+            ],
+            "success": true
+          },
+          "deforestation": {
+            "metadata": {
+              "region": "California",
+              "baselineStart": "2023-01-01",
+              "baselineEnd": "2023-03-31",
+              "currentStart": "2023-10-01",
+              "currentEnd": "2023-12-31",
+              "scale": 30,
+              "dataset": "COPERNICUS/S2_SR_HARMONIZED"
+            },
+            "deforestation": {
+              "detected": false,
+              "percentLoss": 0,
+              "areaLoss": 0,
+              "severity": "UNKNOWN"
+            },
+            "carbonLoss": null,
+            "alerts": [],
+            "recommendations": [],
+            "success": false
+          },
+          "water": {
+            "metadata": {
+              "region": "California",
+              "startDate": "2023-07-01",
+              "endDate": "2023-07-31",
+              "waterBody": "lake",
+              "scale": 30,
+              "dataset": "COPERNICUS/S2_SR_HARMONIZED"
+            },
+            "qualityScore": 0,
+            "qualityLevel": "UNKNOWN",
+            "turbidity": null,
+            "algaeBloom": null,
+            "warnings": [],
+            "recommendations": [],
+            "success": false
+          }
+        }
+      }
+    },
+    "Data Flow Test": {
+      "success": false,
+      "duration": 1,
+      "details": {
+        "success": false,
+        "fireRisk": "UNKNOWN"
+      }
+    },
+    "Error Recovery Test": {
+      "success": false,
+      "duration": 0,
+      "details": {
+        "success": false,
+        "errorHandled": false,
+        "recoverySuccessful": false
+      }
+    }
+  },
+  "performance": {
+    "averageSingleExecution": 0.2,
+    "parallelThroughput": 4166.666666666667,
+    "memoryUsageMB": 9.320510864257812,
+    "benchmarks": {
+      "singleExecution": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "parallelExecution": [],
+      "memoryUsage": []
+    }
+  },
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "totalTests": 10,
+    "successfulTests": 3,
+    "failedTests": 7,
+    "successRate": "30.00%",
+    "errorCount": 0,
+    "testDate": "2025-09-09T23:20:42.095Z"
+  }
+}

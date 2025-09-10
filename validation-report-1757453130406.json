@@ -1,0 +1,239 @@
+{
+  "timestamp": "2025-09-09T21:25:30.406Z",
+  "summary": {
+    "overallAccuracy": 40,
+    "averageExecutionTime": 98223.2,
+    "errorRate": 0,
+    "totalTests": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "models": {
+    "wildfire_california": {
+      "prediction": "LOW",
+      "groundTruth": "HIGH",
+      "accuracy": 0,
+      "executionTime": 234331
+    },
+    "wildfire_alaska": {
+      "prediction": "LOW",
+      "groundTruth": "LOW",
+      "accuracy": 100,
+      "executionTime": 394265
+    },
+    "flood_houston": {
+      "prediction": "LOW",
+      "groundTruth": "CRITICAL",
+      "accuracy": 0,
+      "executionTime": 9554
+    },
+    "flood_miami": {
+      "prediction": "LOW",
+      "groundTruth": "HIGH",
+      "executionTime": 6953
+    },
+    "flood_denver": {
+      "prediction": "LOW",
+      "groundTruth": "MODERATE",
+      "executionTime": 11339
+    },
+    "agriculture_iowa": {
+      "prediction": "STRESSED",
+      "groundTruth": "HEALTHY",
+      "accuracy": 0,
+      "executionTime": 25810
+    },
+    "agriculture_california": {
+      "prediction": "STRESSED",
+      "groundTruth": "STRESSED",
+      "executionTime": 87205
+    },
+    "deforestation_amazon": {
+      "detected": false,
+      "executionTime": 38607
+    },
+    "water_tahoe": {
+      "prediction": "GOOD",
+      "groundTruth": "GOOD",
+      "accuracy": 100,
+      "executionTime": 74936
+    },
+    "water_erie": {
+      "prediction": "GOOD",
+      "groundTruth": "POOR",
+      "executionTime": 99232
+    }
+  },
+  "performance": {
+    "executionTimes": [
+      {
+        "test": "wildfire_alaska",
+        "duration": 394265,
+        "memory": 0.33582305908203125
+      },
+      {
+        "test": "wildfire_california",
+        "duration": 234331,
+        "memory": 3.4799728393554688
+      },
+      {
+        "test": "water_erie",
+        "duration": 99232,
+        "memory": 0.02689361572265625
+      },
+      {
+        "test": "agriculture_california",
+        "duration": 87205,
+        "memory": 0.26929473876953125
+      },
+      {
+        "test": "water_tahoe",
+        "duration": 74936,
+        "memory": 0.05667877197265625
+      },
+      {
+        "test": "deforestation_amazon",
+        "duration": 38607,
+        "memory": 0.1178436279296875
+      },
+      {
+        "test": "agriculture_iowa",
+        "duration": 25810,
+        "memory": 0.5828857421875
+      },
+      {
+        "test": "flood_denver",
+        "duration": 11339,
+        "memory": 0.18721771240234375
+      },
+      {
+        "test": "flood_houston",
+        "duration": 9554,
+        "memory": 0.6283645629882812
+      },
+      {
+        "test": "flood_miami",
+        "duration": 6953,
+        "memory": 0.46529388427734375
+      }
+    ],
+    "memoryUsage": [],
+    "apiCalls": 0,
+    "errors": []
+  },
+  "groundTruth": {
+    "wildfire": {
+      "california_summer_2023": {
+        "actualRiskLevel": "HIGH",
+        "actualRiskScore": 72,
+        "burnedAreaHectares": 145000,
+        "majorFires": [
+          "Head Fire",
+          "Bonny Fire",
+          "Rabbit Fire"
+        ],
+        "peakFireMonth": "August",
+        "vegetationMoisture": 0.12,
+        "avgTemperature": 32,
+        "precipitation": 5,
+        "windSpeed": 25
+      },
+      "alaska_spring_2023": {
+        "actualRiskLevel": "LOW",
+        "actualRiskScore": 15,
+        "burnedAreaHectares": 500,
+        "vegetationMoisture": 0.65,
+        "avgTemperature": 8,
+        "precipitation": 150
+      }
+    },
+    "flood": {
+      "houston_harvey_pattern": {
+        "actualRiskLevel": "CRITICAL",
+        "actualFloodExtentKm2": 450,
+        "peakPrecipitation": 1318,
+        "floodDepthMeters": 3.5,
+        "affectedPopulation": 120000,
+        "infrastructureDamage": "SEVERE",
+        "drainageCapacityExceeded": true
+      },
+      "miami_king_tide": {
+        "actualRiskLevel": "HIGH",
+        "tidalHeight": 1.2,
+        "stormSurge": 2.1,
+        "coastalInundationKm2": 25,
+        "saltWaterIntrusion": true
+      },
+      "denver_snowmelt": {
+        "actualRiskLevel": "MODERATE",
+        "snowpackDepth": 2.5,
+        "meltRate": 0.15,
+        "riverDischarge": 850
+      }
+    },
+    "agriculture": {
+      "iowa_corn_2023": {
+        "actualYieldBushelsPerAcre": 183,
+        "cropHealthStatus": "HEALTHY",
+        "growingDegreeDays": 2650,
+        "rainfallMm": 890,
+        "pestPressure": "LOW",
+        "soilMoisture": 0.42,
+        "ndviPeak": 0.82,
+        "harvestDate": "2023-10-15"
+      },
+      "california_drought_stress": {
+        "actualYieldReduction": 35,
+        "cropHealthStatus": "STRESSED",
+        "irrigationRequired": true,
+        "waterStressLevel": "SEVERE",
+        "ndviPeak": 0.45
+      }
+    },
+    "deforestation": {
+      "amazon_2023": {
+        "actualLossHectares": 11568,
+        "lossRate": 0.13,
+        "primaryDrivers": [
+          "cattle ranching",
+          "agriculture"
+        ],
+        "carbonEmissions": 5200000,
+        "fragmentationIndex": 0.72
+      },
+      "congo_basin_2023": {
+        "actualLossHectares": 3200,
+        "lossRate": 0.08,
+        "primaryDrivers": [
+          "small-scale agriculture",
+          "logging"
+        ],
+        "intactForestLoss": 12
+      }
+    },
+    "water": {
+      "lake_tahoe_clear": {
+        "actualQualityLevel": "GOOD",
+        "secchiDepth": 19.3,
+        "chlorophyll": 0.8,
+        "temperature": 12.5,
+        "dissolvedOxygen": 8.9,
+        "turbidity": 0.5
+      },
+      "lake_erie_algae": {
+        "actualQualityLevel": "POOR",
+        "algaeBloomSeverity": 8.5,
+        "chlorophyll": 45,
+        "turbidity": 25,
+        "phosphorus": 0.12
+      }
+    }
+  },
+  "certified": false,
+  "recommendations": [
+    "Continue monitoring model drift",
+    "Update ground truth quarterly",
+    "Implement automated validation pipeline",
+    "Add cross-validation with multiple regions"
+  ]
+}

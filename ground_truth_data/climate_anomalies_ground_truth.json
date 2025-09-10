@@ -1,0 +1,33 @@
+{
+  "climate_records": {
+    "chicago_metro": {
+      "normal_values_1991_2020": {
+        "annual_temp_c": 10.5,
+        "annual_precip_mm": 950,
+        "frost_days": 120,
+        "heat_wave_days": 15
+      },
+      "extreme_events": [
+        {
+          "date": "2024-01-15",
+          "type": "cold_wave",
+          "min_temp_c": -25.5,
+          "duration_days": 5,
+          "anomaly_c": -15.2
+        },
+        {
+          "date": "2024-07-20",
+          "type": "heat_wave",
+          "max_temp_c": 41.2,
+          "duration_days": 7,
+          "anomaly_c": 8.5
+        }
+      ],
+      "trends_per_decade": {
+        "temperature_c": 0.3,
+        "precipitation_percent": 2.5,
+        "extreme_events": 1.2
+      }
+    }
+  }
+}

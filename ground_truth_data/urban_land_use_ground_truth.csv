@@ -1,0 +1,11 @@
+parcel_id,latitude,longitude,land_use_class,building_height_m,building_footprint_m2,impervious_surface_percent,green_space_m2,tree_canopy_percent,population_density_per_km2,surface_temperature_c,air_temperature_c
+PHX_001,33.4484,-112.0740,residential,8.5,250,75,100,15,3500,42.5,38.2
+PHX_002,33.4584,-112.0840,commercial,15.2,1200,95,50,5,500,45.8,39.5
+PHX_003,33.4684,-112.0940,industrial,12.8,2500,98,20,2,100,48.2,40.1
+PHX_004,33.4784,-112.1040,park,3.0,100,10,5000,65,50,35.2,36.5
+PHX_005,33.4884,-112.1140,residential,7.2,200,70,150,20,4200,41.8,37.8
+PHX_006,33.4984,-112.1240,commercial,18.5,1800,96,30,3,300,46.5,39.8
+PHX_007,33.5084,-112.1340,mixed_use,11.0,800,85,200,12,2800,43.2,38.5
+PHX_008,33.5184,-112.1440,residential,6.8,180,65,200,25,3800,40.5,37.2
+PHX_009,33.5284,-112.1540,institutional,14.0,3000,88,500,18,1500,44.0,38.8
+PHX_010,33.5384,-112.1640,vacant,0,0,5,1000,8,0,47.5,39.2

@@ -1,0 +1,118 @@
+{
+  "timestamp": "2025-09-10T02:51:36.735Z",
+  "summary": {
+    "total": 13,
+    "passed": 12,
+    "failed": 1,
+    "totalTime": "24.90",
+    "passRate": "92.3%"
+  },
+  "tests": [
+    {
+      "test": "NDVI Analysis - Los Angeles",
+      "status": "PASSED",
+      "time": "1.29",
+      "meanNDVI": "0.2702"
+    },
+    {
+      "test": "NDVI Analysis - San Francisco",
+      "status": "PASSED",
+      "time": "3.17",
+      "meanNDVI": "0.0186"
+    },
+    {
+      "test": "EVI Enhanced Vegetation",
+      "status": "PASSED",
+      "time": "3.97"
+    },
+    {
+      "test": "Composite - Los Angeles",
+      "status": "PASSED",
+      "time": "0.64"
+    },
+    {
+      "test": "Composite - Los Angeles",
+      "status": "PASSED",
+      "time": "0.70"
+    },
+    {
+      "test": "Composite - Los Angeles",
+      "status": "PASSED",
+      "time": "0.44"
+    },
+    {
+      "test": "Custom EE Code Execution",
+      "status": "PASSED",
+      "time": "0.10"
+    },
+    {
+      "test": "Unknown",
+      "status": "FAILED",
+      "time": "0.10"
+    },
+    {
+      "test": "Composite - New York",
+      "status": "PASSED",
+      "time": "1.64"
+    },
+    {
+      "test": "NDWI Water Analysis",
+      "status": "PASSED",
+      "time": "2.59"
+    },
+    {
+      "test": "NDVI Analysis - Los Angeles",
+      "status": "PASSED",
+      "time": "2.80",
+      "meanNDVI": "0.2702"
+    },
+    {
+      "test": "Wildfire Risk Model",
+      "status": "PASSED",
+      "time": "3.23",
+      "riskLevel": "High"
+    },
+    {
+      "test": "NDWI Water Analysis",
+      "status": "PASSED",
+      "time": "4.23"
+    }
+  ],
+  "categories": {
+    "NDVI Analysis": {
+      "count": 3,
+      "totalTime": 7.26,
+      "passed": 3
+    },
+    "EVI Enhanced Vegetation": {
+      "count": 1,
+      "totalTime": 3.97,
+      "passed": 1
+    },
+    "Composite": {
+      "count": 4,
+      "totalTime": 3.42,
+      "passed": 4
+    },
+    "Custom EE Code Execution": {
+      "count": 1,
+      "totalTime": 0.1,
+      "passed": 1
+    },
+    "Unknown": {
+      "count": 1,
+      "totalTime": 0.1,
+      "passed": 0
+    },
+    "NDWI Water Analysis": {
+      "count": 2,
+      "totalTime": 6.82,
+      "passed": 2
+    },
+    "Wildfire Risk Model": {
+      "count": 1,
+      "totalTime": 3.23,
+      "passed": 1
+    }
+  }
+}

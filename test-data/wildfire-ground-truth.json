@@ -1,0 +1,167 @@
+{
+  "metadata": {
+    "type": "wildfire_incidents",
+    "description": "Historical wildfire incidents with severity and environmental conditions",
+    "date_created": "2025-01-10",
+    "coordinate_system": "WGS84",
+    "units": {
+      "temperature": "celsius",
+      "windSpeed": "km/h",
+      "burnArea": "hectares",
+      "fuelMoisture": "percentage"
+    }
+  },
+  "validation_points": [
+    {
+      "id": "WF001",
+      "location": {
+        "lat": 37.7749,
+        "lon": -122.4194,
+        "name": "San Francisco Bay Area"
+      },
+      "date": "2024-07-15",
+      "severity": "HIGH",
+      "burnArea": 1250,
+      "conditions": {
+        "temperature": 38,
+        "humidity": 12,
+        "windSpeed": 45,
+        "fuelMoisture": 8,
+        "vegetationType": "grassland",
+        "ndvi": 0.25,
+        "ndwi": -0.15,
+        "slope": 18
+      },
+      "actualRiskScore": 85,
+      "causeFactor": "extreme_heat_low_moisture"
+    },
+    {
+      "id": "WF002",
+      "location": {
+        "lat": 34.0522,
+        "lon": -118.2437,
+        "name": "Los Angeles"
+      },
+      "date": "2024-08-20",
+      "severity": "EXTREME",
+      "burnArea": 5500,
+      "conditions": {
+        "temperature": 42,
+        "humidity": 8,
+        "windSpeed": 65,
+        "fuelMoisture": 5,
+        "vegetationType": "chaparral",
+        "ndvi": 0.18,
+        "ndwi": -0.25,
+        "slope": 25
+      },
+      "actualRiskScore": 95,
+      "causeFactor": "santa_ana_winds"
+    },
+    {
+      "id": "WF003",
+      "location": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "Sacramento"
+      },
+      "date": "2024-06-10",
+      "severity": "MODERATE",
+      "burnArea": 450,
+      "conditions": {
+        "temperature": 33,
+        "humidity": 25,
+        "windSpeed": 20,
+        "fuelMoisture": 15,
+        "vegetationType": "mixed_forest",
+        "ndvi": 0.45,
+        "ndwi": 0.05,
+        "slope": 12
+      },
+      "actualRiskScore": 55,
+      "causeFactor": "moderate_conditions"
+    },
+    {
+      "id": "WF004",
+      "location": {
+        "lat": 32.7157,
+        "lon": -117.1611,
+        "name": "San Diego"
+      },
+      "date": "2024-09-05",
+      "severity": "HIGH",
+      "burnArea": 2200,
+      "conditions": {
+        "temperature": 40,
+        "humidity": 10,
+        "windSpeed": 50,
+        "fuelMoisture": 7,
+        "vegetationType": "scrubland",
+        "ndvi": 0.20,
+        "ndwi": -0.20,
+        "slope": 22
+      },
+      "actualRiskScore": 88,
+      "causeFactor": "prolonged_drought"
+    },
+    {
+      "id": "WF005",
+      "location": {
+        "lat": 36.7783,
+        "lon": -119.4179,
+        "name": "Fresno"
+      },
+      "date": "2024-07-25",
+      "severity": "LOW",
+      "burnArea": 50,
+      "conditions": {
+        "temperature": 30,
+        "humidity": 35,
+        "windSpeed": 10,
+        "fuelMoisture": 25,
+        "vegetationType": "agricultural",
+        "ndvi": 0.60,
+        "ndwi": 0.15,
+        "slope": 5
+      },
+      "actualRiskScore": 25,
+      "causeFactor": "controlled_burn"
+    }
+  ],
+  "calibration_data": {
+    "risk_thresholds": {
+      "extreme": 85,
+      "high": 65,
+      "moderate": 45,
+      "low": 25
+    },
+    "weight_factors": {
+      "temperature": 0.20,
+      "humidity": 0.15,
+      "windSpeed": 0.25,
+      "fuelMoisture": 0.20,
+      "ndvi": 0.10,
+      "slope": 0.10
+    }
+  },
+  "test_scenarios": [
+    {
+      "name": "extreme_conditions",
+      "parameters": {
+        "temperature_range": [40, 45],
+        "humidity_range": [5, 10],
+        "wind_range": [60, 80]
+      },
+      "expected_risk": "EXTREME"
+    },
+    {
+      "name": "post_rain_conditions",
+      "parameters": {
+        "temperature_range": [25, 30],
+        "humidity_range": [60, 80],
+        "fuel_moisture_range": [30, 40]
+      },
+      "expected_risk": "LOW"
+    }
+  ]
+}

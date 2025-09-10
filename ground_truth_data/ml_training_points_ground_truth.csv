@@ -1,0 +1,11 @@
+sample_id,latitude,longitude,class_label,confidence,collection_date,verified_by,notes
+ML_001,25.7617,-80.1918,urban,0.95,2024-06-01,field_survey,High density residential
+ML_002,25.7717,-80.2018,water,1.00,2024-06-01,field_survey,Biscayne Bay
+ML_003,25.7817,-80.2118,vegetation,0.92,2024-06-01,field_survey,Mangrove forest
+ML_004,25.7917,-80.2218,bare_soil,0.88,2024-06-01,aerial_photo,Construction site
+ML_005,25.8017,-80.2318,urban,0.96,2024-06-02,field_survey,Commercial district
+ML_006,25.8117,-80.2418,vegetation,0.90,2024-06-02,field_survey,Urban park
+ML_007,25.8217,-80.2518,water,0.98,2024-06-02,satellite,Canal
+ML_008,25.8317,-80.2618,wetland,0.85,2024-06-03,field_survey,Freshwater marsh
+ML_009,25.8417,-80.2718,agriculture,0.91,2024-06-03,field_survey,Nursery
+ML_010,25.8517,-80.2818,urban,0.93,2024-06-03,aerial_photo,Industrial area

@@ -1,0 +1,11 @@
+plot_id,latitude,longitude,tree_id,species,dbh_cm,height_m,crown_diameter_m,health_status,age_years,biomass_kg
+PLOT_001,47.6062,-122.3321,T001,Douglas Fir,45.2,28.5,8.2,healthy,65,1250
+PLOT_001,47.6062,-122.3321,T002,Western Hemlock,38.5,25.3,7.1,healthy,55,850
+PLOT_001,47.6062,-122.3321,T003,Red Cedar,52.1,31.2,9.5,healthy,85,1680
+PLOT_001,47.6062,-122.3321,T004,Douglas Fir,41.3,27.1,7.8,damaged,60,980
+PLOT_002,47.6162,-122.3421,T005,Sitka Spruce,48.6,29.8,8.8,healthy,70,1420
+PLOT_002,47.6162,-122.3421,T006,Western Hemlock,35.2,23.5,6.5,healthy,50,720
+PLOT_002,47.6162,-122.3421,T007,Douglas Fir,55.8,32.5,10.2,healthy,90,2100
+PLOT_003,47.6262,-122.3521,T008,Red Alder,28.5,18.2,5.8,healthy,35,450
+PLOT_003,47.6262,-122.3521,T009,Big Leaf Maple,32.1,20.5,6.2,diseased,40,580
+PLOT_003,47.6262,-122.3521,T010,Douglas Fir,62.3,35.1,11.5,healthy,110,2850

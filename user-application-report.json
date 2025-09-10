@@ -1,0 +1,248 @@
+{
+  "timestamp": "2025-09-10T03:13:57.764Z",
+  "totalUsers": 56,
+  "useCaseCategories": {
+    "agriculture": 14,
+    "forest": 3,
+    "climate": 3,
+    "disaster": 1,
+    "urban": 1,
+    "custom": 6
+  },
+  "supportLevel": {
+    "fullySupported": "60%",
+    "partiallySupported": "30%",
+    "needsExtension": "10%"
+  },
+  "testResults": {
+    "agriculture": [
+      {
+        "success": true,
+        "operation": "index",
+        "indexType": "NDVI",
+        "region": "Los Angeles",
+        "dateRange": "2024-03-01 to 2024-05-31",
+        "statistics": {
+          "mean": "N/A",
+          "min": "N/A",
+          "max": "N/A",
+          "stdDev": "N/A"
+        },
+        "visualization": {
+          "thumbnailUrl": "https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/de24d9301a1990e8c80e8484428150cb-15ad468631bb6e85ec17624db6e191a6:getPixels",
+          "colorPalette": [
+            "FFFFFF",
+            "CE7E45",
+            "DF923D",
+            "F1B555",
+            "FCD163",
+            "99B718",
+            "74A901",
+            "66A000",
+            "529400",
+            "3E8601",
+            "207401",
+            "056201",
+            "004C00",
+            "023B01",
+            "012E01",
+            "011D01",
+            "011301"
+          ],
+          "description": "NDVI showing vegetation health (red=bare soil, green=healthy vegetation)",
+          "legendValues": {
+            "-0.2": "Water/No vegetation",
+            "0.0": "Bare soil",
+            "0.2": "Sparse vegetation",
+            "0.4": "Moderate vegetation",
+            "0.6": "Dense vegetation",
+            "0.8": "Very dense vegetation"
+          }
+        },
+        "interactiveMap": {
+          "tilesUrl": "https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/f540f20346957d4b7b94396acca0c130-6378542e9d80289036e34d09e7e12248/tiles/{z}/{x}/{y}",
+          "mapId": "projects/earthengine-legacy/maps/f540f20346957d4b7b94396acca0c130-6378542e9d80289036e34d09e7e12248"
+        },
+        "htmlArtifact": "\n<!DOCTYPE html>\n<html>\n<head>\n    <title>NDVI Map - Los Angeles</title>\n    <style>\n        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }\n        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }\n        h1 { color: #2e7d32; }\n        .map-image { width: 100%; max-width: 100%; height: auto; border: 2px solid #e0e0e0; }\n        .legend { display: flex; justify-content: space-around; margin: 20px 0; padding: 15px; background: #f9f9f9; }\n        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n        .stat-card { padding: 15px; background: #f0f4f8; border-left: 4px solid #4caf50; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <h1>NDVI Analysis - Los Angeles</h1>\n        <img src=\"https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/de24d9301a1990e8c80e8484428150cb-15ad468631bb6e85ec17624db6e191a6:getPixels\" alt=\"NDVI Map\" class=\"map-image\">\n        <div class=\"stats\">\n            <div class=\"stat-card\">\n                <div>Mean</div>\n                <strong>N/A</strong>\n            </div>\n            <div class=\"stat-card\">\n                <div>Min</div>\n                <strong>N/A</strong>\n            </div>\n            <div class=\"stat-card\">\n                <div>Max</div>\n                <strong>N/A</strong>\n            </div>\n            <div class=\"stat-card\">\n                <div>Std Dev</div>\n                <strong>N/A</strong>\n            </div>\n        </div>\n    </div>\n</body>\n</html>",
+        "instructions": {
+          "viewMap": "Open visualization.thumbnailUrl in browser to see the color-coded map",
+          "interpretation": "Unable to calculate statistics"
+        }
+      },
+      {
+        "success": true,
+        "operation": "index",
+        "indexType": "NDVI",
+        "region": "Seattle",
+        "dateRange": "2024-06-01 to 2024-08-31",
+        "statistics": {
+          "mean": "N/A",
+          "min": "N/A",
+          "max": "N/A",
+          "stdDev": "N/A"
+        },
+        "visualization": {
+          "thumbnailUrl": "https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/f7bf69dada1ab2af33c114a3140f0897-ca1d12e008d846f58357220bc3ac9f41:getPixels",
+          "colorPalette": [
+            "FFFFFF",
+            "CE7E45",
+            "DF923D",
+            "F1B555",
+            "FCD163",
+            "99B718",
+            "74A901",
+            "66A000",
+            "529400",
+            "3E8601",
+            "207401",
+            "056201",
+            "004C00",
+            "023B01",
+            "012E01",
+            "011D01",
+            "011301"
+          ],
+          "description": "NDVI showing vegetation health (red=bare soil, green=healthy vegetation)",
+          "legendValues": {
+            "-0.2": "Water/No vegetation",
+            "0.0": "Bare soil",
+            "0.2": "Sparse vegetation",
+            "0.4": "Moderate vegetation",
+            "0.6": "Dense vegetation",
+            "0.8": "Very dense vegetation"
+          }
+        },
+        "interactiveMap": {
+          "tilesUrl": "https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/9579d3becf70ce690ac40e160861457c-da286f1b6043539eae7816216aa34f8c/tiles/{z}/{x}/{y}",
+          "mapId": "projects/earthengine-legacy/maps/9579d3becf70ce690ac40e160861457c-da286f1b6043539eae7816216aa34f8c"
+        },
+        "htmlArtifact": null,
+        "instructions": {
+          "viewMap": "Open visualization.thumbnailUrl in browser to see the color-coded map",
+          "interpretation": "Unable to calculate statistics"
+        }
+      },
+      {
+        "success": true,
+        "operation": "composite",
+        "method": "median",
+        "thumbnailUrl": "https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/5810b77b637b69c935c0cb7476f5673f-dae79c2579559f5161216f4bc75b95d0:getPixels",
+        "region": "Miami",
+        "dateRange": "2024-01-01 to 2024-03-31"
+      }
+    ],
+    "forest": [],
+    "water": [
+      {
+        "success": true,
+        "operation": "index",
+        "indexType": "NDWI",
+        "region": "Los Angeles",
+        "dateRange": "2024-03-01 to 2024-05-31",
+        "statistics": {
+          "mean": "N/A",
+          "min": "N/A",
+          "max": "N/A",
+          "stdDev": "N/A"
+        },
+        "visualization": {
+          "thumbnailUrl": "https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/2507d37eb028f3476e61efd1e40b189c-9adede6b209e060c0dcac20e47bc69f6:getPixels",
+          "colorPalette": [
+            "ff0000",
+            "ffff00",
+            "00ff00",
+            "00ffff",
+            "0000ff"
+          ],
+          "description": "NDWI showing water content (blue=water, red=dry)",
+          "legendValues": {
+            "-1.0": "No water/Dry",
+            "-0.5": "Low moisture",
+            "0.0": "Moderate moisture",
+            "0.5": "High moisture",
+            "1.0": "Water body"
+          }
+        },
+        "interactiveMap": {
+          "tilesUrl": "https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/e9392bef24cd32a5bf7e5a032f2e7d69-a98a49acd0a7b22d0d96d13a015d9b96/tiles/{z}/{x}/{y}",
+          "mapId": "projects/earthengine-legacy/maps/e9392bef24cd32a5bf7e5a032f2e7d69-a98a49acd0a7b22d0d96d13a015d9b96"
+        },
+        "htmlArtifact": null,
+        "instructions": {
+          "viewMap": "Open visualization.thumbnailUrl in browser to see the color-coded map",
+          "interpretation": "Unable to calculate statistics"
+        }
+      },
+      {
+        "success": true,
+        "operation": "index",
+        "indexType": "NDWI",
+        "region": "Phoenix",
+        "dateRange": "2024-06-01 to 2024-08-31",
+        "statistics": {
+          "mean": "N/A",
+          "min": "N/A",
+          "max": "N/A",
+          "stdDev": "N/A"
+        },
+        "visualization": {
+          "thumbnailUrl": "https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/02e0c4667a5a6f663ba7b0791a0665ea-750f0844747ce1a2f17b8306969698f0:getPixels",
+          "colorPalette": [
+            "ff0000",
+            "ffff00",
+            "00ff00",
+            "00ffff",
+            "0000ff"
+          ],
+          "description": "NDWI showing water content (blue=water, red=dry)",
+          "legendValues": {
+            "-1.0": "No water/Dry",
+            "-0.5": "Low moisture",
+            "0.0": "Moderate moisture",
+            "0.5": "High moisture",
+            "1.0": "Water body"
+          }
+        },
+        "interactiveMap": {
+          "tilesUrl": "https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/4436ffb05aa9d59ad1802ddca226e76b-60f0d354094e01ae1d45b506eafffec6/tiles/{z}/{x}/{y}",
+          "mapId": "projects/earthengine-legacy/maps/4436ffb05aa9d59ad1802ddca226e76b-60f0d354094e01ae1d45b506eafffec6"
+        },
+        "htmlArtifact": null,
+        "instructions": {
+          "viewMap": "Open visualization.thumbnailUrl in browser to see the color-coded map",
+          "interpretation": "Unable to calculate statistics"
+        }
+      }
+    ],
+    "disaster": [
+      {
+        "success": true,
+        "model": "wildfire_risk",
+        "region": "Los Angeles",
+        "dateRange": "2024-06-01 to 2024-09-30",
+        "riskLevel": "High",
+        "statistics": {
+          "meanRisk": "0.421",
+          "maxRisk": "1.212"
+        },
+        "visualization": {
+          "thumbnailUrl": "https://earthengine.googleapis.com/v1/projects/earthengine-legacy/thumbnails/d325e89355e2e8a99c80b7b6953dfc13-db87e194c32c51b4dc9a8273e4d5fe01:getPixels",
+          "colorScale": "Green (low risk) to Dark Red (extreme risk)",
+          "palette": [
+            "00ff00",
+            "ffff00",
+            "ff9900",
+            "ff0000",
+            "990000"
+          ]
+        },
+        "recommendations": [
+          "Increase monitoring frequency",
+          "Clear dry vegetation from high-risk areas",
+          "Review evacuation plans"
+        ]
+      }
+    ],
+    "climate": []
+  }
+}

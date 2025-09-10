@@ -1,0 +1,46 @@
+{
+  "coastal_segments": {
+    "miami_beach_south": {
+      "length_km": 5.2,
+      "orientation_degrees": 45,
+      "shoreline_type": "sandy_beach",
+      "infrastructure": {
+        "seawalls": [
+          {
+            "id": "SW_001",
+            "length_m": 500,
+            "height_m": 2.5,
+            "year_built": 2015
+          }
+        ],
+        "groins": [
+          {
+            "id": "GR_001",
+            "length_m": 100,
+            "spacing_m": 200,
+            "year_built": 2018
+          }
+        ],
+        "breakwaters": []
+      },
+      "nourishment_history": [
+        {
+          "year": 2020,
+          "volume_m3": 500000,
+          "cost_usd": 12000000,
+          "sand_source": "offshore",
+          "grain_size_mm": 0.35
+        }
+      ],
+      "storm_impacts": [
+        {
+          "storm_name": "Hurricane Irma",
+          "date": "2017-09-10",
+          "surge_height_m": 1.8,
+          "erosion_volume_m3": 150000,
+          "recovery_time_months": 18
+        }
+      ]
+    }
+  }
+}

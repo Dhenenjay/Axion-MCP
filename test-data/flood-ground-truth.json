@@ -1,0 +1,192 @@
+{
+  "metadata": {
+    "type": "flood_events",
+    "description": "Historical flood events with precipitation, terrain, and damage data",
+    "date_created": "2025-01-10",
+    "coordinate_system": "WGS84",
+    "units": {
+      "precipitation": "mm",
+      "elevation": "meters",
+      "floodDepth": "meters",
+      "damageEstimate": "USD"
+    }
+  },
+  "validation_points": [
+    {
+      "id": "FL001",
+      "location": {
+        "lat": 29.7604,
+        "lon": -95.3698,
+        "name": "Houston"
+      },
+      "date": "2024-02-15",
+      "severity": "EXTREME",
+      "floodType": "urban",
+      "floodDepth": 2.5,
+      "conditions": {
+        "precipitation24h": 350,
+        "precipitation7d": 750,
+        "soilMoisture": 95,
+        "elevation": 15,
+        "slope": 2,
+        "imperviousSurface": 75,
+        "drainageCapacity": 30,
+        "ndwi": 0.45
+      },
+      "impactedArea": 15000,
+      "damageEstimate": 5000000,
+      "actualRiskScore": 92
+    },
+    {
+      "id": "FL002",
+      "location": {
+        "lat": 25.7617,
+        "lon": -80.1918,
+        "name": "Miami"
+      },
+      "date": "2024-03-20",
+      "severity": "HIGH",
+      "floodType": "coastal",
+      "floodDepth": 1.8,
+      "conditions": {
+        "precipitation24h": 200,
+        "stormSurge": 3.5,
+        "tideLevel": "high",
+        "elevation": 2,
+        "slope": 0.5,
+        "coastalDistance": 500,
+        "ndwi": 0.65
+      },
+      "impactedArea": 8000,
+      "damageEstimate": 3000000,
+      "actualRiskScore": 78
+    },
+    {
+      "id": "FL003",
+      "location": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "Sacramento"
+      },
+      "date": "2024-01-10",
+      "severity": "MODERATE",
+      "floodType": "riverine",
+      "floodDepth": 1.2,
+      "conditions": {
+        "precipitation24h": 150,
+        "precipitation7d": 400,
+        "riverLevel": 8.5,
+        "elevation": 8,
+        "slope": 3,
+        "floodplainDistance": 200,
+        "ndwi": 0.35
+      },
+      "impactedArea": 3500,
+      "damageEstimate": 1000000,
+      "actualRiskScore": 55
+    },
+    {
+      "id": "FL004",
+      "location": {
+        "lat": 30.2672,
+        "lon": -97.7431,
+        "name": "Austin"
+      },
+      "date": "2024-04-05",
+      "severity": "HIGH",
+      "floodType": "flash",
+      "floodDepth": 1.5,
+      "conditions": {
+        "precipitation1h": 100,
+        "precipitation24h": 250,
+        "soilMoisture": 80,
+        "elevation": 150,
+        "slope": 8,
+        "urbanization": 65,
+        "ndwi": 0.25
+      },
+      "impactedArea": 5000,
+      "damageEstimate": 2000000,
+      "actualRiskScore": 72
+    },
+    {
+      "id": "FL005",
+      "location": {
+        "lat": 47.6062,
+        "lon": -122.3321,
+        "name": "Seattle"
+      },
+      "date": "2024-01-25",
+      "severity": "LOW",
+      "floodType": "urban",
+      "floodDepth": 0.3,
+      "conditions": {
+        "precipitation24h": 50,
+        "precipitation7d": 200,
+        "soilMoisture": 60,
+        "elevation": 56,
+        "slope": 5,
+        "drainageCapacity": 70,
+        "ndwi": 0.15
+      },
+      "impactedArea": 500,
+      "damageEstimate": 100000,
+      "actualRiskScore": 25
+    }
+  ],
+  "calibration_data": {
+    "risk_thresholds": {
+      "extreme": 80,
+      "high": 60,
+      "moderate": 40,
+      "low": 20
+    },
+    "weight_factors": {
+      "precipitation": 0.30,
+      "topography": 0.20,
+      "soilMoisture": 0.15,
+      "urbanization": 0.15,
+      "drainageCapacity": 0.10,
+      "historicalFloods": 0.10
+    },
+    "flood_types": {
+      "riverine": {
+        "key_factors": ["riverLevel", "precipitation7d", "floodplainDistance"]
+      },
+      "coastal": {
+        "key_factors": ["stormSurge", "tideLevel", "coastalDistance"]
+      },
+      "urban": {
+        "key_factors": ["imperviousSurface", "drainageCapacity", "precipitation24h"]
+      },
+      "flash": {
+        "key_factors": ["precipitation1h", "slope", "soilMoisture"]
+      }
+    }
+  },
+  "test_scenarios": [
+    {
+      "name": "hurricane_scenario",
+      "parameters": {
+        "precipitation_range": [300, 500],
+        "storm_surge": [3, 5],
+        "wind_speed": [120, 180]
+      },
+      "expected_risk": "EXTREME"
+    },
+    {
+      "name": "atmospheric_river",
+      "parameters": {
+        "precipitation_7d": [500, 1000],
+        "soil_saturation": [90, 100],
+        "continuous_rain_days": [5, 10]
+      },
+      "expected_risk": "HIGH"
+    }
+  ],
+  "validation_metrics": {
+    "accuracy_threshold": 0.85,
+    "false_positive_tolerance": 0.15,
+    "lead_time_hours": 48
+  }
+}

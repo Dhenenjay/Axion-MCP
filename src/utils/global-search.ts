@@ -146,11 +146,11 @@ async function searchWithContext(city: string, context: string): Promise<any> {
     const fc = (new ee.FeatureCollection('FAO/GAUL/2015/level2') as any);
     const filtered = fc.filter(
       ee.Filter.and(
-        ee.Filter.or(
+        (ee.Filter as any).or(
           ee.Filter.eq('ADM2_NAME', city),
           ee.Filter.eq('ADM2_NAME', toTitleCase(city))
         ),
-        ee.Filter.or(
+        (ee.Filter as any).or(
           ee.Filter.eq('ADM0_NAME', context),
           ee.Filter.eq('ADM0_NAME', toTitleCase(context))
         )
@@ -254,7 +254,7 @@ async function searchUSLocation(searchTerm: string): Promise<any> {
   try {
     const fc = (new ee.FeatureCollection('TIGER/2016/Counties') as any);
     const filtered = fc.filter(
-      ee.Filter.or(
+      (ee.Filter as any).or(
         ee.Filter.eq('NAME', searchTerm),
         ee.Filter.eq('NAME', titleCase),
         ee.Filter.eq('NAMELSAD', searchTerm),
@@ -287,6 +287,63 @@ async function searchFAOGAUL(searchTerm: string): Promise<any> {
     toTitleCase(searchTerm),
     searchTerm.toUpperCase()
   ];
+  
+  // Special handling for major cities that might not be in FAO GAUL
+  const majorCities: { [key: string]: { country: string, fallbackRegion?: string } } = {
+    'sydney': { country: 'Australia', fallbackRegion: 'New South Wales' },
+    'melbourne': { country: 'Australia', fallbackRegion: 'Victoria' },
+    'brisbane': { country: 'Australia', fallbackRegion: 'Queensland' },
+    'perth': { country: 'Australia', fallbackRegion: 'Western Australia' },
+    'adelaide': { country: 'Australia', fallbackRegion: 'South Australia' },
+    'auckland': { country: 'New Zealand', fallbackRegion: 'Auckland' },
+    'wellington': { country: 'New Zealand', fallbackRegion: 'Wellington' },
+    'vancouver': { country: 'Canada', fallbackRegion: 'British Columbia' },
+    'toronto': { country: 'Canada', fallbackRegion: 'Ontario' },
+    'montreal': { country: 'Canada', fallbackRegion: 'Quebec' }
+  };
+  
+  const normalized = searchTerm.toLowerCase();
+  if (majorCities[normalized]) {
+    const cityInfo = majorCities[normalized];
+    // Try to find the state/province for these cities
+    if (cityInfo.fallbackRegion) {
+      try {
+        const fc = (new ee.FeatureCollection('FAO/GAUL/2015/level1') as any);
+        const filtered = fc.filter(
+          ee.Filter.and(
+            ee.Filter.eq('ADM1_NAME', cityInfo.fallbackRegion),
+            ee.Filter.eq('ADM0_NAME', cityInfo.country)
+          )
+        );
+        
+        const count = await filtered.size().getInfo();
+        if (count > 0) {
+          const first = filtered.first();
+          const geometry = first.geometry();
+          console.log(`✅ Found "${searchTerm}" via ${cityInfo.fallbackRegion}, ${cityInfo.country}`);
+          return geometry;
+        }
+      } catch (e) {
+        // Try country level
+      }
+    }
+    
+    // Fall back to country level
+    try {
+      const fc = (new ee.FeatureCollection('FAO/GAUL/2015/level0') as any);
+      const filtered = fc.filter(ee.Filter.eq('ADM0_NAME', cityInfo.country));
+      
+      const count = await filtered.size().getInfo();
+      if (count > 0) {
+        const first = filtered.first();
+        const geometry = first.geometry();
+        console.log(`✅ Found "${searchTerm}" at country level: ${cityInfo.country}`);
+        return geometry;
+      }
+    } catch (e) {
+      // Continue with normal search
+    }
+  }
   
   const levels = [
     { collection: 'FAO/GAUL/2015/level2', field: 'ADM2_NAME', level: 'District' },

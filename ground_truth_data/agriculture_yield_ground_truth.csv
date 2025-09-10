@@ -1,0 +1,11 @@
+latitude,longitude,field_id,crop_type,planting_date,harvest_date,actual_yield_tons_per_hectare,soil_nitrogen_ppm,soil_phosphorus_ppm,soil_moisture_percent,pest_detected,pest_type,disease_detected,disease_type
+34.0522,-118.2437,CA_001,wheat,2024-02-15,2024-07-20,4.8,45,22,28,true,aphids,false,none
+34.0622,-118.2537,CA_002,wheat,2024-02-18,2024-07-22,5.2,48,25,31,false,none,true,rust
+34.0722,-118.2637,CA_003,corn,2024-03-01,2024-08-15,9.5,52,28,35,true,corn_borer,false,none
+34.0822,-118.2737,CA_004,soybeans,2024-03-10,2024-09-05,3.2,38,20,25,false,none,false,none
+34.0922,-118.2837,CA_005,wheat,2024-02-20,2024-07-25,4.5,42,23,29,true,aphids,true,powdery_mildew
+33.9522,-118.2437,CA_006,corn,2024-03-05,2024-08-20,10.2,55,30,38,false,none,false,none
+33.9622,-118.2537,CA_007,soybeans,2024-03-12,2024-09-08,3.5,40,21,27,true,beetles,false,none
+33.9722,-118.2637,CA_008,wheat,2024-02-22,2024-07-28,5.0,46,24,30,false,none,true,septoria
+33.9822,-118.2737,CA_009,corn,2024-03-08,2024-08-25,8.8,50,27,34,true,rootworm,true,gray_leaf_spot
+33.9922,-118.2837,CA_010,wheat,2024-02-25,2024-07-30,4.3,41,22,26,false,none,false,none

@@ -1,0 +1,42 @@
+{
+  "sensors": {
+    "SENSOR_SF_001": {
+      "location": {
+        "lat": 37.8099,
+        "lon": -122.4103
+      },
+      "calibration_date": "2024-05-15",
+      "calibration_coefficients": {
+        "turbidity": {
+          "slope": 1.02,
+          "intercept": 0.5
+        },
+        "chlorophyll": {
+          "slope": 0.98,
+          "intercept": 0.3
+        },
+        "temperature": {
+          "slope": 1,
+          "intercept": 0.1
+        }
+      },
+      "validation_r_squared": {
+        "turbidity": 0.95,
+        "chlorophyll": 0.92,
+        "temperature": 0.99
+      }
+    }
+  },
+  "algae_bloom_events": [
+    {
+      "date": "2024-07-20",
+      "location": {
+        "lat": 37.7299,
+        "lon": -122.4303
+      },
+      "species": "Microcystis aeruginosa",
+      "cell_count_per_ml": 50000,
+      "toxin_level_ug_l": 2.5
+    }
+  ]
+}

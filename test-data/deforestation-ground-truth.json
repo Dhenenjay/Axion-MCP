@@ -1,0 +1,295 @@
+{
+  "metadata": {
+    "type": "forest_change",
+    "description": "Forest loss and degradation monitoring with carbon impact assessment",
+    "date_created": "2025-01-10",
+    "coordinate_system": "WGS84",
+    "units": {
+      "area": "hectares",
+      "carbonLoss": "metric_tons_CO2",
+      "biomass": "tons/hectare",
+      "changeRate": "hectares/year"
+    }
+  },
+  "validation_points": [
+    {
+      "id": "DF001",
+      "location": {
+        "lat": -3.4653,
+        "lon": -62.2159,
+        "name": "Amazon Rainforest - Manaus Region",
+        "polygon": [
+          [-62.25, -3.45],
+          [-62.18, -3.45],
+          [-62.18, -3.48],
+          [-62.25, -3.48]
+        ]
+      },
+      "forestType": "tropical_rainforest",
+      "monitoringPeriod": {
+        "baseline": "2022-01-01",
+        "current": "2024-01-01"
+      },
+      "changes": {
+        "totalArea": 5000,
+        "forestLoss": 450,
+        "degradedArea": 200,
+        "intactForest": 4350,
+        "lossRate": 225
+      },
+      "drivers": ["agriculture", "logging"],
+      "biomassData": {
+        "originalBiomass": 450,
+        "currentBiomass": 380,
+        "carbonLoss": 31500
+      },
+      "indices": {
+        "baselineNDVI": 0.85,
+        "currentNDVI": 0.72,
+        "baselineNBR": 0.42,
+        "currentNBR": 0.31
+      },
+      "severity": "HIGH",
+      "alertLevel": "CRITICAL"
+    },
+    {
+      "id": "DF002",
+      "location": {
+        "lat": -15.7801,
+        "lon": -47.9292,
+        "name": "Brazilian Cerrado",
+        "polygon": [
+          [-47.95, -15.77],
+          [-47.91, -15.77],
+          [-47.91, -15.79],
+          [-47.95, -15.79]
+        ]
+      },
+      "forestType": "savanna_woodland",
+      "monitoringPeriod": {
+        "baseline": "2022-06-01",
+        "current": "2024-06-01"
+      },
+      "changes": {
+        "totalArea": 3000,
+        "forestLoss": 600,
+        "degradedArea": 300,
+        "intactForest": 2100,
+        "lossRate": 300
+      },
+      "drivers": ["soy_cultivation", "cattle_ranching"],
+      "biomassData": {
+        "originalBiomass": 150,
+        "currentBiomass": 105,
+        "carbonLoss": 13500
+      },
+      "indices": {
+        "baselineNDVI": 0.65,
+        "currentNDVI": 0.45,
+        "baselineNBR": 0.35,
+        "currentNBR": 0.22
+      },
+      "severity": "EXTREME",
+      "alertLevel": "CRITICAL"
+    },
+    {
+      "id": "DF003",
+      "location": {
+        "lat": 2.5000,
+        "lon": 112.5000,
+        "name": "Borneo Rainforest",
+        "polygon": [
+          [112.48, 2.51],
+          [112.52, 2.51],
+          [112.52, 2.49],
+          [112.48, 2.49]
+        ]
+      },
+      "forestType": "tropical_peat_forest",
+      "monitoringPeriod": {
+        "baseline": "2023-01-01",
+        "current": "2024-12-01"
+      },
+      "changes": {
+        "totalArea": 2000,
+        "forestLoss": 180,
+        "degradedArea": 150,
+        "intactForest": 1670,
+        "lossRate": 90
+      },
+      "drivers": ["palm_oil", "fire"],
+      "biomassData": {
+        "originalBiomass": 500,
+        "currentBiomass": 440,
+        "carbonLoss": 12000,
+        "peatCarbon": 8000
+      },
+      "indices": {
+        "baselineNDVI": 0.88,
+        "currentNDVI": 0.78,
+        "baselineNBR": 0.45,
+        "currentNBR": 0.38
+      },
+      "severity": "MODERATE",
+      "alertLevel": "WARNING"
+    },
+    {
+      "id": "DF004",
+      "location": {
+        "lat": 47.6062,
+        "lon": -122.3321,
+        "name": "Pacific Northwest Forest",
+        "polygon": [
+          [-122.35, 47.61],
+          [-122.31, 47.61],
+          [-122.31, 47.60],
+          [-122.35, 47.60]
+        ]
+      },
+      "forestType": "temperate_coniferous",
+      "monitoringPeriod": {
+        "baseline": "2022-01-01",
+        "current": "2024-01-01"
+      },
+      "changes": {
+        "totalArea": 1500,
+        "forestLoss": 30,
+        "degradedArea": 20,
+        "intactForest": 1450,
+        "lossRate": 15
+      },
+      "drivers": ["sustainable_logging", "urban_expansion"],
+      "biomassData": {
+        "originalBiomass": 350,
+        "currentBiomass": 340,
+        "carbonLoss": 1750
+      },
+      "indices": {
+        "baselineNDVI": 0.75,
+        "currentNDVI": 0.73,
+        "baselineNBR": 0.40,
+        "currentNBR": 0.38
+      },
+      "severity": "LOW",
+      "alertLevel": "NORMAL"
+    },
+    {
+      "id": "DF005",
+      "location": {
+        "lat": -1.2921,
+        "lon": 36.8219,
+        "name": "Congo Basin",
+        "polygon": [
+          [36.80, -1.28],
+          [36.84, -1.28],
+          [36.84, -1.30],
+          [36.80, -1.30]
+        ]
+      },
+      "forestType": "tropical_rainforest",
+      "monitoringPeriod": {
+        "baseline": "2023-01-01",
+        "current": "2024-10-01"
+      },
+      "changes": {
+        "totalArea": 4000,
+        "forestLoss": 250,
+        "degradedArea": 180,
+        "intactForest": 3570,
+        "lossRate": 150
+      },
+      "drivers": ["small_scale_agriculture", "charcoal_production"],
+      "biomassData": {
+        "originalBiomass": 420,
+        "currentBiomass": 385,
+        "carbonLoss": 14700
+      },
+      "indices": {
+        "baselineNDVI": 0.82,
+        "currentNDVI": 0.75,
+        "baselineNBR": 0.43,
+        "currentNBR": 0.37
+      },
+      "severity": "MODERATE",
+      "alertLevel": "WARNING"
+    }
+  ],
+  "calibration_data": {
+    "forest_types": {
+      "tropical_rainforest": {
+        "typical_ndvi": [0.80, 0.90],
+        "biomass_range": [400, 550],
+        "carbon_factor": 0.47
+      },
+      "temperate_forest": {
+        "typical_ndvi": [0.70, 0.85],
+        "biomass_range": [250, 400],
+        "carbon_factor": 0.45
+      },
+      "savanna_woodland": {
+        "typical_ndvi": [0.55, 0.70],
+        "biomass_range": [100, 200],
+        "carbon_factor": 0.43
+      }
+    },
+    "change_detection": {
+      "ndvi_loss_threshold": 0.10,
+      "nbr_loss_threshold": 0.08,
+      "minimum_patch_size": 0.5,
+      "confidence_levels": {
+        "high": 0.90,
+        "medium": 0.75,
+        "low": 0.60
+      }
+    },
+    "alert_thresholds": {
+      "critical": {
+        "loss_rate": 200,
+        "percent_loss": 10
+      },
+      "warning": {
+        "loss_rate": 100,
+        "percent_loss": 5
+      },
+      "normal": {
+        "loss_rate": 50,
+        "percent_loss": 2
+      }
+    }
+  },
+  "test_scenarios": [
+    {
+      "name": "rapid_deforestation",
+      "parameters": {
+        "loss_rate": [300, 500],
+        "ndvi_decline": [0.15, 0.25],
+        "fragmentation_index": "high"
+      },
+      "expected_alert": "CRITICAL"
+    },
+    {
+      "name": "forest_degradation",
+      "parameters": {
+        "canopy_gaps": 0.20,
+        "ndvi_variability": 0.15,
+        "edge_effect_distance": 100
+      },
+      "expected_severity": "MODERATE"
+    },
+    {
+      "name": "natural_regeneration",
+      "parameters": {
+        "ndvi_increase": [0.05, 0.15],
+        "succession_stage": "secondary",
+        "time_since_disturbance": 5
+      },
+      "expected_trend": "RECOVERY"
+    }
+  ],
+  "validation_metrics": {
+    "detection_accuracy": 0.92,
+    "false_positive_rate": 0.08,
+    "minimum_detectable_change": 0.5,
+    "temporal_consistency": 0.88
+  }
+}

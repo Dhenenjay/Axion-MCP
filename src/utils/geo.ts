@@ -114,6 +114,61 @@ function tryGetAdminBoundary(placeName: string): any {
       }
     }
     
+    // Handle common geographic regions and landmarks
+    const geographicRegions: { [key: string]: () => any } = {
+      'alps': () => ee.Geometry.Polygon([[5.95, 45.82], [15.04, 45.82], [15.04, 47.81], [5.95, 47.81], [5.95, 45.82]]),
+      'europe': () => ee.Geometry.Polygon([[-10, 35], [40, 35], [40, 70], [-10, 70], [-10, 35]]),
+      'asia': () => ee.Geometry.Polygon([[25, -10], [180, -10], [180, 80], [25, 80], [25, -10]]),
+      'africa': () => ee.Geometry.Polygon([[-20, -35], [55, -35], [55, 37], [-20, 37], [-20, -35]]),
+      'north america': () => ee.Geometry.Polygon([[-170, 15], [-50, 15], [-50, 80], [-170, 80], [-170, 15]]),
+      'south america': () => ee.Geometry.Polygon([[-82, -56], [-34, -56], [-34, 13], [-82, 13], [-82, -56]]),
+      'australia': () => ee.Geometry.Polygon([[112, -44], [154, -44], [154, -10], [112, -10], [112, -44]]),
+      'amazon': () => ee.Geometry.Polygon([[-78, -20], [-43, -20], [-43, 5], [-78, 5], [-78, -20]]),
+      'amazon rainforest': () => ee.Geometry.Polygon([[-78, -20], [-43, -20], [-43, 5], [-78, 5], [-78, -20]]),
+      'sahara': () => ee.Geometry.Polygon([[-17, 15], [38, 15], [38, 35], [-17, 35], [-17, 15]]),
+      'sahara desert': () => ee.Geometry.Polygon([[-17, 15], [38, 15], [38, 35], [-17, 35], [-17, 15]]),
+      'great barrier reef': () => ee.Geometry.Polygon([[142, -24], [154, -24], [154, -10], [142, -10], [142, -24]]),
+      'himalayas': () => ee.Geometry.Polygon([[70, 25], [105, 25], [105, 40], [70, 40], [70, 25]]),
+      'rocky mountains': () => ee.Geometry.Polygon([[-120, 32], [-100, 32], [-100, 60], [-120, 60], [-120, 32]]),
+      'andes': () => ee.Geometry.Polygon([[-80, -55], [-62, -55], [-62, 10], [-80, 10], [-80, -55]]),
+      'mediterranean': () => ee.Geometry.Polygon([[-6, 30], [36, 30], [36, 46], [-6, 46], [-6, 30]]),
+      'caribbean': () => ee.Geometry.Polygon([[-87, 10], [-59, 10], [-59, 27], [-87, 27], [-87, 10]]),
+      'lake tahoe': () => ee.Geometry.Point([-120.0, 39.1]).buffer(30000),
+      'sacramento valley': () => ee.Geometry.Polygon([[-122.5, 38.5], [-121.0, 38.5], [-121.0, 40.5], [-122.5, 40.5], [-122.5, 38.5]]),
+      'kenya': () => {
+        // Use FAO GAUL for Kenya
+        const countries = (new ee.FeatureCollection('FAO/GAUL/2015/level0') as any)
+          .filter(ee.Filter.eq('ADM0_NAME', 'Kenya'));
+        return countries.first().geometry();
+      },
+      'brazil': () => {
+        // Use FAO GAUL for Brazil
+        const countries = (new ee.FeatureCollection('FAO/GAUL/2015/level0') as any)
+          .filter(ee.Filter.eq('ADM0_NAME', 'Brazil'));
+        return countries.first().geometry();
+      },
+      'algeria': () => {
+        // Use FAO GAUL for Algeria
+        const countries = (new ee.FeatureCollection('FAO/GAUL/2015/level0') as any)
+          .filter(ee.Filter.eq('ADM0_NAME', 'Algeria'));
+        return countries.first().geometry();
+      },
+      'queensland': () => {
+        // Australian state - use a bounding box
+        return ee.Geometry.Polygon([[138, -29], [154, -29], [154, -10], [138, -10], [138, -29]]);
+      }
+    };
+    
+    if (geographicRegions[normalized]) {
+      try {
+        const geometry = geographicRegions[normalized]();
+        console.log(`Found geographic region: ${placeName}`);
+        return geometry;
+      } catch (e) {
+        console.log(`Error getting geometry for region ${placeName}:`, e);
+      }
+    }
+    
     // Try other common US cities using TIGER data
     const usCityMappings: { [key: string]: { county: string, state: string } } = {
       'miami': { county: 'Miami-Dade', state: '12' }, // FL

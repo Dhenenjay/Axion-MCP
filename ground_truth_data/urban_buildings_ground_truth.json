@@ -1,0 +1,31 @@
+{
+  "buildings": {
+    "PHX_COMM_001": {
+      "type": "office",
+      "year_built": 2010,
+      "floors": 5,
+      "total_area_m2": 5000,
+      "occupancy": 250,
+      "energy_consumption_kwh_year": 750000,
+      "water_consumption_m3_year": 2500,
+      "hvac_type": "central_ac",
+      "solar_panels": true,
+      "green_roof": false,
+      "leed_certified": "gold"
+    }
+  },
+  "urban_heat_measurements": [
+    {
+      "date": "2024-07-15",
+      "time": "14:00",
+      "location": [
+        33.4484,
+        -112.074
+      ],
+      "surface_temp_c": 52.3,
+      "air_temp_c": 42.1,
+      "relative_humidity": 18,
+      "wind_speed_m_s": 2.5
+    }
+  ]
+}
