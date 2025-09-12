@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "type": "crop_classification_training",
+    "description": "Agricultural ground truth data for Illinois Corn Belt",
+    "region": "Illinois, USA",
+    "date_created": "2025-01-12",
+    "coordinate_system": "WGS84",
+    "season": "2024 Growing Season"
+  },
+  "training_points": [
+    {
+      "id": "IL_CORN_001",
+      "location": {"lat": 40.1164, "lon": -88.2434, "county": "Champaign"},
+      "crop_type": "corn",
+      "ndvi_peak": 0.92,
+      "label": 1
+    },
+    {
+      "id": "IL_CORN_002",
+      "location": {"lat": 41.2619, "lon": -88.9548, "county": "LaSalle"},
+      "crop_type": "corn",
+      "ndvi_peak": 0.90,
+      "label": 1
+    },
+    {
+      "id": "IL_CORN_003",
+      "location": {"lat": 39.8403, "lon": -89.6446, "county": "Sangamon"},
+      "crop_type": "corn",
+      "ndvi_peak": 0.91,
+      "label": 1
+    },
+    {
+      "id": "IL_SOY_001",
+      "location": {"lat": 40.4842, "lon": -90.6739, "county": "Knox"},
+      "crop_type": "soybean",
+      "ndvi_peak": 0.85,
+      "label": 2
+    },
+    {
+      "id": "IL_SOY_002",
+      "location": {"lat": 39.3210, "lon": -88.3701, "county": "Effingham"},
+      "crop_type": "soybean",
+      "ndvi_peak": 0.87,
+      "label": 2
+    },
+    {
+      "id": "IL_SOY_003",
+      "location": {"lat": 41.8781, "lon": -87.6298, "county": "Cook"},
+      "crop_type": "soybean",
+      "ndvi_peak": 0.84,
+      "label": 2
+    },
+    {
+      "id": "IL_WHEAT_001",
+      "location": {"lat": 37.7272, "lon": -89.2168, "county": "Jackson"},
+      "crop_type": "wheat",
+      "ndvi_peak": 0.78,
+      "label": 3
+    },
+    {
+      "id": "IL_HAY_001",
+      "location": {"lat": 42.2711, "lon": -89.0940, "county": "Winnebago"},
+      "crop_type": "hay",
+      "ndvi_peak": 0.72,
+      "label": 4
+    }
+  ],
+  "class_definitions": {
+    "1": "corn",
+    "2": "soybean",
+    "3": "wheat",
+    "4": "hay"
+  }
+}

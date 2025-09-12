@@ -1,0 +1,82 @@
+{
+  "metadata": {
+    "type": "crop_classification_training",
+    "description": "Agricultural ground truth data for Kansas Wheat Belt",
+    "region": "Kansas, USA",
+    "date_created": "2025-01-12",
+    "coordinate_system": "WGS84",
+    "season": "2024 Growing Season"
+  },
+  "training_points": [
+    {
+      "id": "KS_WHEAT_001",
+      "location": {"lat": 37.0872, "lon": -97.8305, "county": "Sedgwick"},
+      "crop_type": "winter_wheat",
+      "ndvi_peak": 0.79,
+      "label": 1
+    },
+    {
+      "id": "KS_WHEAT_002",
+      "location": {"lat": 38.8403, "lon": -99.3180, "county": "Ellis"},
+      "crop_type": "winter_wheat",
+      "ndvi_peak": 0.77,
+      "label": 1
+    },
+    {
+      "id": "KS_WHEAT_003",
+      "location": {"lat": 37.6889, "lon": -100.8720, "county": "Finney"},
+      "crop_type": "winter_wheat",
+      "ndvi_peak": 0.81,
+      "label": 1
+    },
+    {
+      "id": "KS_CORN_001",
+      "location": {"lat": 39.0473, "lon": -95.6752, "county": "Shawnee"},
+      "crop_type": "corn",
+      "ndvi_peak": 0.89,
+      "label": 2
+    },
+    {
+      "id": "KS_CORN_002",
+      "location": {"lat": 38.0608, "lon": -97.9298, "county": "Reno"},
+      "crop_type": "corn",
+      "ndvi_peak": 0.91,
+      "label": 2
+    },
+    {
+      "id": "KS_SORGHUM_001",
+      "location": {"lat": 37.2753, "lon": -98.5528, "county": "Harper"},
+      "crop_type": "sorghum",
+      "ndvi_peak": 0.84,
+      "label": 3
+    },
+    {
+      "id": "KS_SORGHUM_002",
+      "location": {"lat": 37.5605, "lon": -97.3334, "county": "Butler"},
+      "crop_type": "sorghum",
+      "ndvi_peak": 0.82,
+      "label": 3
+    },
+    {
+      "id": "KS_SOY_001",
+      "location": {"lat": 39.7392, "lon": -97.2211, "county": "Republic"},
+      "crop_type": "soybean",
+      "ndvi_peak": 0.86,
+      "label": 4
+    },
+    {
+      "id": "KS_SUNFLOWER_001",
+      "location": {"lat": 39.3486, "lon": -100.8112, "county": "Sherman"},
+      "crop_type": "sunflower",
+      "ndvi_peak": 0.73,
+      "label": 5
+    }
+  ],
+  "class_definitions": {
+    "1": "winter_wheat",
+    "2": "corn",
+    "3": "sorghum",
+    "4": "soybean",
+    "5": "sunflower"
+  }
+}

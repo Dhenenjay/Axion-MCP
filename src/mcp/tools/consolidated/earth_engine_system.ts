@@ -164,6 +164,23 @@ async function executeCode(params: any) {
     const executePromise = (async () => {
       const result = await func(ee, codeParams);
       
+      // If result is an Earth Engine Image, store it for later use
+      if (result && typeof result.select === 'function' && typeof result.visualize === 'function') {
+        // This appears to be an Earth Engine Image
+        const timestamp = Date.now();
+        const imageKey = `user_image_${timestamp}`;
+        compositeStore[imageKey] = result;
+        
+        // Return info about the stored image
+        return {
+          type: 'EarthEngineImage',
+          stored: true,
+          imageKey: imageKey,
+          message: 'Image stored successfully',
+          usage: `Use imageKey '${imageKey}' with the export tool for thumbnails or exports`
+        };
+      }
+      
       // If result is an Earth Engine object, try to get info with optimizer
       let output;
       if (result && typeof result.getInfo === 'function') {

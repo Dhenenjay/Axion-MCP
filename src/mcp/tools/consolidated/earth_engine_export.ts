@@ -176,7 +176,7 @@ async function generateThumbnail(params: any) {
   } else if (input) {
     // Use provided input - ensure it's a valid EE object
     if (typeof input === 'string') {
-      // If input is a string, it might be a compositeKey or datasetId
+      // If input is a string, it might be a compositeKey, modelKey, or datasetId
       if (compositeStore[input]) {
         image = compositeStore[input];
         // Also get metadata if this is a composite
@@ -197,6 +197,26 @@ async function generateThumbnail(params: any) {
             gamma: 1.4
           };
         }
+      } else if (input.startsWith('agriculture_model_') || 
+                 input.startsWith('wildfire_model_') || 
+                 input.startsWith('flood_model_') || 
+                 input.startsWith('deforestation_model_') || 
+                 input.startsWith('water_quality_model_')) {
+        // This is a model key - retrieve from compositeStore
+        if (compositeStore[input]) {
+          image = compositeStore[input];
+          // Set appropriate default vis for model outputs
+          if (input.startsWith('agriculture_model_')) {
+            defaultVis = {
+              bands: ['crop_health'],
+              min: 0,
+              max: 0.8,
+              palette: ['red', 'orange', 'yellow', 'lightgreen', 'darkgreen']
+            };
+          }
+        } else {
+          throw new Error(`Model output '${input}' not found in store`);
+        }
       } else {
         // Try as dataset ID
         try {
@@ -212,7 +232,27 @@ async function generateThumbnail(params: any) {
       image = input;
     }
   } else {
-    throw new Error('No image source provided. Use compositeKey, ndviKey, datasetId, or input');
+    // Check if there's a recent model or composite in the store
+    const storeKeys = Object.keys(compositeStore);
+    if (storeKeys.length > 0) {
+      // Get the most recent key (highest timestamp)
+      const recentKey = storeKeys.sort().reverse()[0];
+      console.log(`No input specified, using most recent stored image: ${recentKey}`);
+      image = compositeStore[recentKey];
+      input = recentKey;
+      
+      // Set appropriate defaults based on key type
+      if (recentKey.startsWith('agriculture_model_')) {
+        defaultVis = {
+          bands: ['crop_health'],
+          min: 0,
+          max: 0.8,
+          palette: ['red', 'orange', 'yellow', 'lightgreen', 'darkgreen']
+        };
+      }
+    } else {
+      throw new Error('No image source provided. Use compositeKey, ndviKey, modelKey, datasetId, or input');
+    }
   }
   
   // Smart merge of visParams - fix common mistakes
@@ -315,7 +355,13 @@ async function generateThumbnail(params: any) {
       try {
         const visualizedImage = image.visualize(finalVis);
         const url = await new Promise((resolve, reject) => {
+          // Set a timeout for thumbnail generation
+          const timeout = setTimeout(() => {
+            reject(new Error('Thumbnail generation timed out (30s)'));
+          }, 30000);
+          
           visualizedImage.getThumbURL(thumbParams, (url: string, error: any) => {
+            clearTimeout(timeout);
             if (error) reject(error);
             else resolve(url);
           });
@@ -325,14 +371,46 @@ async function generateThumbnail(params: any) {
           success: true,
           operation: 'thumbnail',
           url,
-          message: 'Thumbnail generated (reduced resolution)',
+          message: 'Thumbnail generated with smaller dimensions',
           visualization: finalVis,
-          dimensions: 256,
+          dimensions: thumbParams.dimensions,
+          requestedDimensions: dimensions,
           region: region || 'full extent',
-          warning: 'Generated at reduced resolution due to size constraints'
+          source: ndviKey ? 'NDVI' : compositeKey ? 'composite' : datasetId || 'input'
         };
       } catch (fallbackError: any) {
-        throw new Error(`Thumbnail generation failed: ${fallbackError.message}`);
+        // If even small thumbnail fails, try ultra-small
+        console.log('Fallback failed, trying ultra-small thumbnail (128px)...');
+        thumbParams.dimensions = 128;
+        
+        try {
+          const visualizedImage = image.visualize(finalVis);
+          const url = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Ultra-small thumbnail also timed out'));
+            }, 15000);
+            
+            visualizedImage.getThumbURL(thumbParams, (url: string, error: any) => {
+              clearTimeout(timeout);
+              if (error) reject(error);
+              else resolve(url);
+            });
+          });
+          
+          return {
+            success: true,
+            operation: 'thumbnail',
+            url,
+            message: 'Thumbnail generated at minimum size (128px) due to region complexity',
+            visualization: finalVis,
+            dimensions: 128,
+            requestedDimensions: dimensions,
+            region: region || 'full extent',
+            source: ndviKey ? 'NDVI' : compositeKey ? 'composite' : datasetId || 'input'
+          };
+        } catch (ultraFallbackError: any) {
+          throw new Error(`Thumbnail generation failed even at minimum size: ${ultraFallbackError.message}`);
+        }
       }
     }
     

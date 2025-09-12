@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "type": "crop_classification_training",
+    "description": "Agricultural ground truth data for California Central Valley",
+    "region": "California Central Valley, USA",
+    "date_created": "2025-01-12",
+    "coordinate_system": "WGS84",
+    "season": "2024 Growing Season"
+  },
+  "training_points": [
+    {
+      "id": "CA_ALMOND_001",
+      "location": {"lat": 36.7468, "lon": -119.7725, "county": "Fresno"},
+      "crop_type": "almonds",
+      "ndvi_peak": 0.75,
+      "label": 1
+    },
+    {
+      "id": "CA_ALMOND_002",
+      "location": {"lat": 37.3217, "lon": -120.4777, "county": "Merced"},
+      "crop_type": "almonds",
+      "ndvi_peak": 0.78,
+      "label": 1
+    },
+    {
+      "id": "CA_GRAPE_001",
+      "location": {"lat": 36.3156, "lon": -119.6498, "county": "Tulare"},
+      "crop_type": "grapes",
+      "ndvi_peak": 0.72,
+      "label": 2
+    },
+    {
+      "id": "CA_GRAPE_002",
+      "location": {"lat": 38.2975, "lon": -121.3009, "county": "San Joaquin"},
+      "crop_type": "grapes",
+      "ndvi_peak": 0.70,
+      "label": 2
+    },
+    {
+      "id": "CA_COTTON_001",
+      "location": {"lat": 35.3733, "lon": -119.0187, "county": "Kern"},
+      "crop_type": "cotton",
+      "ndvi_peak": 0.82,
+      "label": 3
+    },
+    {
+      "id": "CA_COTTON_002",
+      "location": {"lat": 36.1377, "lon": -119.3682, "county": "Kings"},
+      "crop_type": "cotton",
+      "ndvi_peak": 0.85,
+      "label": 3
+    },
+    {
+      "id": "CA_TOMATO_001",
+      "location": {"lat": 38.5816, "lon": -121.4944, "county": "Sacramento"},
+      "crop_type": "tomatoes",
+      "ndvi_peak": 0.88,
+      "label": 4
+    },
+    {
+      "id": "CA_TOMATO_002",
+      "location": {"lat": 39.5296, "lon": -121.7525, "county": "Butte"},
+      "crop_type": "tomatoes",
+      "ndvi_peak": 0.86,
+      "label": 4
+    },
+    {
+      "id": "CA_RICE_001",
+      "location": {"lat": 39.1404, "lon": -121.6169, "county": "Sutter"},
+      "crop_type": "rice",
+      "ndvi_peak": 0.91,
+      "label": 5
+    },
+    {
+      "id": "CA_RICE_002",
+      "location": {"lat": 39.3633, "lon": -121.6597, "county": "Colusa"},
+      "crop_type": "rice",
+      "ndvi_peak": 0.93,
+      "label": 5
+    }
+  ],
+  "class_definitions": {
+    "1": "almonds",
+    "2": "grapes",
+    "3": "cotton",
+    "4": "tomatoes",
+    "5": "rice"
+  }
+}

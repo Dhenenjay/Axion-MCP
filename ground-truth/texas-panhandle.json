@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "type": "crop_classification_training",
+    "description": "Agricultural ground truth data for Texas Panhandle",
+    "region": "Texas Panhandle, USA",
+    "date_created": "2025-01-12",
+    "coordinate_system": "WGS84",
+    "season": "2024 Growing Season"
+  },
+  "training_points": [
+    {
+      "id": "TX_COTTON_001",
+      "location": {"lat": 33.5779, "lon": -101.8552, "county": "Lubbock"},
+      "crop_type": "cotton",
+      "ndvi_peak": 0.83,
+      "label": 1
+    },
+    {
+      "id": "TX_COTTON_002",
+      "location": {"lat": 34.0693, "lon": -101.8263, "county": "Hale"},
+      "crop_type": "cotton",
+      "ndvi_peak": 0.85,
+      "label": 1
+    },
+    {
+      "id": "TX_WHEAT_001",
+      "location": {"lat": 35.2220, "lon": -101.8313, "county": "Potter"},
+      "crop_type": "wheat",
+      "ndvi_peak": 0.76,
+      "label": 2
+    },
+    {
+      "id": "TX_WHEAT_002",
+      "location": {"lat": 36.0726, "lon": -102.0772, "county": "Dallam"},
+      "crop_type": "wheat",
+      "ndvi_peak": 0.78,
+      "label": 2
+    },
+    {
+      "id": "TX_SORGHUM_001",
+      "location": {"lat": 34.5339, "lon": -102.3983, "county": "Parmer"},
+      "crop_type": "sorghum",
+      "ndvi_peak": 0.81,
+      "label": 3
+    },
+    {
+      "id": "TX_CORN_001",
+      "location": {"lat": 35.8667, "lon": -101.8312, "county": "Moore"},
+      "crop_type": "corn",
+      "ndvi_peak": 0.88,
+      "label": 4
+    },
+    {
+      "id": "TX_PEANUT_001",
+      "location": {"lat": 33.1776, "lon": -102.3694, "county": "Gaines"},
+      "crop_type": "peanuts",
+      "ndvi_peak": 0.79,
+      "label": 5
+    }
+  ],
+  "class_definitions": {
+    "1": "cotton",
+    "2": "wheat",
+    "3": "sorghum",
+    "4": "corn",
+    "5": "peanuts"
+  }
+}

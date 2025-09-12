@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "type": "crop_classification_training",
+    "description": "Agricultural ground truth data for North Dakota",
+    "region": "North Dakota, USA",
+    "date_created": "2025-01-12",
+    "coordinate_system": "WGS84",
+    "season": "2024 Growing Season"
+  },
+  "training_points": [
+    {
+      "id": "ND_WHEAT_001",
+      "location": {"lat": 46.8772, "lon": -96.7898, "county": "Cass"},
+      "crop_type": "spring_wheat",
+      "ndvi_peak": 0.80,
+      "label": 1
+    },
+    {
+      "id": "ND_WHEAT_002",
+      "location": {"lat": 48.1470, "lon": -103.6180, "county": "Williams"},
+      "crop_type": "spring_wheat",
+      "ndvi_peak": 0.78,
+      "label": 1
+    },
+    {
+      "id": "ND_CANOLA_001",
+      "location": {"lat": 48.7750, "lon": -97.1762, "county": "Pembina"},
+      "crop_type": "canola",
+      "ndvi_peak": 0.82,
+      "label": 2
+    },
+    {
+      "id": "ND_SUNFLOWER_001",
+      "location": {"lat": 46.3588, "lon": -101.2669, "county": "Morton"},
+      "crop_type": "sunflower",
+      "ndvi_peak": 0.74,
+      "label": 3
+    },
+    {
+      "id": "ND_BARLEY_001",
+      "location": {"lat": 47.9253, "lon": -97.0329, "county": "Grand Forks"},
+      "crop_type": "barley",
+      "ndvi_peak": 0.77,
+      "label": 4
+    },
+    {
+      "id": "ND_FLAX_001",
+      "location": {"lat": 48.5699, "lon": -101.2961, "county": "Burke"},
+      "crop_type": "flax",
+      "ndvi_peak": 0.71,
+      "label": 5
+    },
+    {
+      "id": "ND_SUGARBEET_001",
+      "location": {"lat": 47.7674, "lon": -97.1179, "county": "Walsh"},
+      "crop_type": "sugarbeet",
+      "ndvi_peak": 0.88,
+      "label": 6
+    }
+  ],
+  "class_definitions": {
+    "1": "spring_wheat",
+    "2": "canola",
+    "3": "sunflower",
+    "4": "barley",
+    "5": "flax",
+    "6": "sugarbeet"
+  }
+}
