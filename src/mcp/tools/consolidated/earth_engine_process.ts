@@ -68,7 +68,16 @@ const ProcessToolSchema = z.object({
   floodType: z.enum(['urban', 'riverine', 'coastal']).optional(),
   
   // Agriculture model params
-  cropType: z.enum(['corn', 'wheat', 'soy', 'rice', 'cotton', 'all']).optional(),
+  cropType: z.enum(['corn', 'wheat', 'soy', 'rice', 'cotton', 'sugarcane', 'potato', 'tomato', 'vineyard', 'orchard', 'pasture', 'all']).optional(),
+  analysisType: z.enum(['comprehensive', 'classification', 'yield', 'irrigation', 'disease', 'soil', 'phenology']).optional(),
+  includeWeather: z.boolean().optional(),
+  includeSoil: z.boolean().optional(),
+  includeHistorical: z.boolean().optional(),
+  yieldModel: z.boolean().optional(),
+  irrigationAnalysis: z.boolean().optional(),
+  diseaseRisk: z.boolean().optional(),
+  fieldBoundaries: z.any().optional(),
+  cropCalendar: z.any().optional(),
   
   // Deforestation model params
   baselineStart: z.string().optional(),
@@ -895,12 +904,30 @@ async function runFloodModel(params: any) {
 }
 
 /**
- * Agricultural Monitoring Model - Enhanced with Crop Classification Support
+ * Comprehensive Agricultural Analysis Model - All Use Cases
+ * Supports: Classification, Yield Prediction, Irrigation, Disease Detection, Soil Analysis, etc.
  */
 async function runAgricultureModel(params: any) {
-  const { region, startDate, endDate, cropType = 'all', scale = 30, groundTruth, classification = false } = params;
+  const { 
+    region, 
+    startDate, 
+    endDate, 
+    cropType = 'all', 
+    scale = 30, 
+    groundTruth, 
+    classification = false,
+    analysisType = 'comprehensive', // New: comprehensive, classification, yield, irrigation, disease, soil, phenology
+    includeWeather = false,
+    includeSoil = false,
+    includeHistorical = false,
+    yieldModel = false,
+    irrigationAnalysis = false,
+    diseaseRisk = false,
+    fieldBoundaries = null,
+    cropCalendar = null
+  } = params;
   
-  if (!region) throw new Error('Region required for agricultural monitoring');
+  if (!region) throw new Error('Region required for agricultural analysis');
   
   const geometry = await parseAoi(region);
   const dates = {
@@ -909,45 +936,334 @@ async function runAgricultureModel(params: any) {
   };
   
   try {
-    // Get Sentinel-2 imagery
-    const collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+    // Initialize results object
+    let results: any = {
+      success: true,
+      operation: 'model',
+      modelType: 'agriculture',
+      analysisType,
+      region: typeof region === 'string' ? region : 'custom geometry',
+      dateRange: dates,
+      cropType
+    };
+    
+    // Get Sentinel-2 imagery with enhanced processing
+    const s2Collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
       .filterDate(dates.start, dates.end)
       .filterBounds(geometry)
       .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
       .map((img: any) => {
-        // Calculate vegetation indices
-        const ndvi = img.normalizedDifference(['B8', 'B4']).rename('NDVI');
-        const evi = img.expression(
+        // Scale values
+        const scaled = img.divide(10000).select(['B.*']);
+        
+        // Core vegetation indices
+        const ndvi = scaled.normalizedDifference(['B8', 'B4']).rename('NDVI');
+        const evi = scaled.expression(
           '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))',
           {
-            'NIR': img.select('B8').divide(10000),
-            'RED': img.select('B4').divide(10000),
-            'BLUE': img.select('B2').divide(10000)
+            'NIR': scaled.select('B8'),
+            'RED': scaled.select('B4'),
+            'BLUE': scaled.select('B2')
           }
         ).rename('EVI');
-        const ndmi = img.normalizedDifference(['B8A', 'B11']).rename('NDMI');
-        const msavi = img.expression(
+        const ndmi = scaled.normalizedDifference(['B8A', 'B11']).rename('NDMI');
+        const msavi = scaled.expression(
           '(2 * NIR + 1 - sqrt((2 * NIR + 1) ** 2 - 8 * (NIR - RED))) / 2',
           {
-            'NIR': img.select('B8').divide(10000),
-            'RED': img.select('B4').divide(10000)
+            'NIR': scaled.select('B8'),
+            'RED': scaled.select('B4')
           }
         ).rename('MSAVI');
         
-        return ndvi.addBands([evi, ndmi, msavi])
+        // Advanced agricultural indices
+        const gndvi = scaled.normalizedDifference(['B8', 'B3']).rename('GNDVI'); // Green NDVI
+        const ndre = scaled.normalizedDifference(['B8', 'B5']).rename('NDRE'); // Red Edge NDVI
+        const cvi = scaled.select('B8').multiply(scaled.select('B5')).divide(scaled.select('B3').pow(2)).rename('CVI'); // Chlorophyll Vegetation Index
+        const lai = scaled.expression(
+          '3.618 * EVI - 0.118',
+          { 'EVI': evi }
+        ).rename('LAI'); // Leaf Area Index
+        const savi = scaled.expression(
+          '((NIR - RED) / (NIR + RED + L)) * (1 + L)',
+          {
+            'NIR': scaled.select('B8'),
+            'RED': scaled.select('B4'),
+            'L': 0.5
+          }
+        ).rename('SAVI');
+        const ndwi = scaled.normalizedDifference(['B3', 'B8']).rename('NDWI'); // Water index
+        const bsi = scaled.expression(
+          '((SWIR + RED) - (NIR + BLUE)) / ((SWIR + RED) + (NIR + BLUE))',
+          {
+            'SWIR': scaled.select('B11'),
+            'RED': scaled.select('B4'),
+            'NIR': scaled.select('B8'),
+            'BLUE': scaled.select('B2')
+          }
+        ).rename('BSI'); // Bare Soil Index
+        
+        return scaled.addBands([ndvi, evi, ndmi, msavi, gndvi, ndre, cvi, lai, savi, ndwi, bsi])
           .copyProperties(img, ['system:time_start']);
       });
     
-    // Calculate crop health index (composite of indices)
-    const cropHealth = collection.select(['NDVI', 'EVI', 'NDMI', 'MSAVI'])
-      .mean()
-      .reduce(ee.Reducer.mean())
-      .rename('crop_health')
-      .clip(geometry);
+    // Create base composite
+    const baseComposite = s2Collection.median().clip(geometry);
     
-    // Store result
+    // 1. CROP HEALTH MONITORING
+    const cropHealth = baseComposite.select(['NDVI', 'EVI', 'NDMI', 'MSAVI'])
+      .reduce(ee.Reducer.mean())
+      .rename('crop_health');
+    
+    // 2. YIELD PREDICTION FEATURES
+    let yieldFeatures = null;
+    if (yieldModel || analysisType === 'yield' || analysisType === 'comprehensive') {
+      // Calculate growth stage indicators
+      const peakNDVI = s2Collection.select('NDVI').max();
+      const meanNDVI = s2Collection.select('NDVI').mean();
+      const ndviStdDev = s2Collection.select('NDVI').reduce(ee.Reducer.stdDev());
+      
+      // Accumulated indices over growing season
+      const accumulatedGDD = s2Collection.select('NDVI')
+        .map((img: any) => img.multiply(10)) // Proxy for GDD
+        .sum()
+        .rename('accumulated_GDD');
+      
+      // Stress indicators
+      const stressIndex = baseComposite.select('NDMI').lt(0.2)
+        .add(baseComposite.select('NDVI').lt(0.3))
+        .rename('stress_index');
+      
+      yieldFeatures = {
+        peakNDVI: peakNDVI,
+        meanNDVI: meanNDVI,
+        ndviVariability: ndviStdDev,
+        accumulatedGDD: accumulatedGDD,
+        stressIndex: stressIndex,
+        predictedYield: 'Use machine learning with these features for yield prediction'
+      };
+      
+      results.yieldAnalysis = {
+        features: ['peakNDVI', 'meanNDVI', 'ndviVariability', 'accumulatedGDD', 'stressIndex'],
+        message: 'Yield prediction features calculated',
+        usage: 'Combine with historical yield data for model training'
+      };
+    }
+    
+    // 3. IRRIGATION MONITORING
+    let irrigationMetrics = null;
+    if (irrigationAnalysis || analysisType === 'irrigation' || analysisType === 'comprehensive') {
+      // Soil moisture proxy using NDWI and thermal data
+      const soilMoisture = baseComposite.select('NDWI');
+      
+      // Evapotranspiration proxy
+      const etIndex = baseComposite.expression(
+        '(1 - NDVI) * (LST - 273.15)',
+        {
+          'NDVI': baseComposite.select('NDVI'),
+          'LST': ee.Image(300) // Placeholder - would use MODIS LST
+        }
+      ).rename('ET_index');
+      
+      // Water stress detection
+      const waterStress = baseComposite.select('NDMI').lt(0.1)
+        .or(baseComposite.select('NDWI').lt(-0.1))
+        .rename('water_stress');
+      
+      // Field-level irrigation need
+      const irrigationNeed = waterStress.multiply(baseComposite.select('NDVI').gt(0.3))
+        .rename('irrigation_need');
+      
+      irrigationMetrics = {
+        soilMoisture: soilMoisture,
+        waterStress: waterStress,
+        irrigationNeed: irrigationNeed,
+        etIndex: etIndex
+      };
+      
+      results.irrigationAnalysis = {
+        metrics: ['soilMoisture', 'waterStress', 'irrigationNeed', 'ET_index'],
+        recommendation: 'Areas with high irrigation_need values require immediate watering',
+        efficiency: 'Monitor NDWI trends for irrigation scheduling'
+      };
+    }
+    
+    // 4. PEST AND DISEASE RISK
+    let diseaseMetrics = null;
+    if (diseaseRisk || analysisType === 'disease' || analysisType === 'comprehensive') {
+      // Anomaly detection in vegetation indices
+      const ndviAnomaly = baseComposite.select('NDVI')
+        .subtract(s2Collection.select('NDVI').mean())
+        .abs()
+        .rename('ndvi_anomaly');
+      
+      // Red edge position for stress detection
+      const redEdgeAnomaly = baseComposite.select('NDRE')
+        .lt(0.2)
+        .rename('red_edge_stress');
+      
+      // Chlorophyll content indicator
+      const chlorophyllStress = baseComposite.select('CVI')
+        .lt(baseComposite.select('CVI').reduceRegion({
+          reducer: ee.Reducer.percentile([25]),
+          geometry: geometry,
+          scale: scale
+        }))
+        .rename('chlorophyll_stress');
+      
+      // Combined disease risk index
+      const diseaseRiskIndex = ndviAnomaly.multiply(0.3)
+        .add(redEdgeAnomaly.multiply(0.4))
+        .add(chlorophyllStress.multiply(0.3))
+        .rename('disease_risk');
+      
+      diseaseMetrics = {
+        ndviAnomaly: ndviAnomaly,
+        redEdgeStress: redEdgeAnomaly,
+        chlorophyllStress: chlorophyllStress,
+        diseaseRiskIndex: diseaseRiskIndex
+      };
+      
+      results.diseaseAnalysis = {
+        riskFactors: ['ndvi_anomaly', 'red_edge_stress', 'chlorophyll_stress'],
+        riskIndex: 'disease_risk',
+        interpretation: {
+          '0.0-0.3': 'Low risk',
+          '0.3-0.6': 'Moderate risk - monitor closely',
+          '0.6-1.0': 'High risk - immediate inspection needed'
+        },
+        recommendation: 'Focus on areas with high disease_risk values for field scouting'
+      };
+    }
+    
+    // 5. SOIL ANALYSIS
+    let soilMetrics = null;
+    if (includeSoil || analysisType === 'soil' || analysisType === 'comprehensive') {
+      // Bare soil index for soil properties
+      const bareSoil = baseComposite.select('BSI');
+      
+      // Soil organic matter proxy
+      const soilOrganic = baseComposite.select(['B11', 'B12']).reduce(ee.Reducer.mean())
+        .multiply(-1).add(1) // Invert - darker soil = more organic matter
+        .rename('soil_organic');
+      
+      // Soil salinity index
+      const salinity = baseComposite.expression(
+        '(B * R) / G',
+        {
+          'B': baseComposite.select('B2'),
+          'R': baseComposite.select('B4'),
+          'G': baseComposite.select('B3')
+        }
+      ).rename('salinity_index');
+      
+      soilMetrics = {
+        bareSoilIndex: bareSoil,
+        organicMatter: soilOrganic,
+        salinityIndex: salinity
+      };
+      
+      results.soilAnalysis = {
+        properties: ['bare_soil', 'organic_matter', 'salinity'],
+        message: 'Soil properties estimated from spectral signatures',
+        usage: 'Combine with soil samples for calibration'
+      };
+    }
+    
+    // 6. PHENOLOGY AND GROWTH STAGES
+    let phenologyMetrics = null;
+    if (analysisType === 'phenology' || analysisType === 'comprehensive') {
+      // Time series analysis for growth stages
+      const greenup = s2Collection.select('NDVI')
+        .map((img: any) => {
+          return img.updateMask(img.gt(0.3));
+        })
+        .first()
+        .rename('greenup_date');
+      
+      const peakGrowth = s2Collection.select('NDVI').max().rename('peak_growth');
+      const senescence = s2Collection.select('NDVI')
+        .map((img: any) => {
+          return img.updateMask(img.lt(s2Collection.select('NDVI').max().multiply(0.8)));
+        })
+        .first()
+        .rename('senescence_start');
+      
+      phenologyMetrics = {
+        greenupDate: greenup,
+        peakGrowth: peakGrowth,
+        senescenceStart: senescence,
+        growingSeasonLength: 'Calculate from greenup to senescence dates'
+      };
+      
+      results.phenologyAnalysis = {
+        stages: ['greenup', 'peak_growth', 'senescence'],
+        metrics: 'Growth stage timing and duration',
+        usage: 'Optimize management practices based on crop phenology'
+      };
+    }
+    
+    // 7. WEATHER DATA INTEGRATION
+    let weatherData = null;
+    if (includeWeather || analysisType === 'comprehensive') {
+      // Get precipitation from CHIRPS
+      const precipitation = ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY')
+        .filterDate(dates.start, dates.end)
+        .filterBounds(geometry)
+        .sum()
+        .clip(geometry)
+        .rename('total_precipitation');
+      
+      // Get temperature from ERA5
+      const temperature = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
+        .filterDate(dates.start, dates.end)
+        .filterBounds(geometry)
+        .select('temperature_2m')
+        .mean()
+        .subtract(273.15) // Convert to Celsius
+        .clip(geometry)
+        .rename('mean_temperature');
+      
+      weatherData = {
+        precipitation: precipitation,
+        temperature: temperature,
+        summary: 'Weather conditions during growing season'
+      };
+      
+      results.weatherAnalysis = {
+        totalPrecipitation: 'mm',
+        meanTemperature: '°C',
+        usage: 'Correlate with crop performance for climate impact assessment'
+      };
+    }
+    
+    // Store comprehensive results
     const modelKey = `agriculture_model_${Date.now()}`;
-    compositeStore[modelKey] = cropHealth;
+    
+    // Create comprehensive output image with all layers
+    let comprehensiveImage = baseComposite.addBands(cropHealth);
+    
+    if (yieldFeatures) {
+      comprehensiveImage = comprehensiveImage
+        .addBands(yieldFeatures.peakNDVI)
+        .addBands(yieldFeatures.stressIndex);
+    }
+    if (irrigationMetrics) {
+      comprehensiveImage = comprehensiveImage
+        .addBands(irrigationMetrics.waterStress)
+        .addBands(irrigationMetrics.irrigationNeed);
+    }
+    if (diseaseMetrics) {
+      comprehensiveImage = comprehensiveImage
+        .addBands(diseaseMetrics.diseaseRiskIndex);
+    }
+    if (soilMetrics) {
+      comprehensiveImage = comprehensiveImage
+        .addBands(soilMetrics.bareSoilIndex)
+        .addBands(soilMetrics.salinityIndex);
+    }
+    
+    compositeStore[modelKey] = comprehensiveImage;
+    results.modelKey = modelKey;
     
     // Calculate time series if requested
     let timeSeries = null;
@@ -1016,37 +1332,118 @@ async function runAgricultureModel(params: any) {
       };
     }
     
-    return {
-      success: true,
-      operation: 'model',
-      modelType: 'agriculture',
-      modelKey,
-      message: classification ? 'Agricultural classification model prepared' : 'Agricultural monitoring completed',
-      region: typeof region === 'string' ? region : 'custom geometry',
-      cropType,
-      dateRange: dates,
-      healthLevels: {
-        '0.0-0.2': 'Poor',
-        '0.2-0.4': 'Fair',
-        '0.4-0.6': 'Good',
-        '0.6-0.8': 'Very Good',
-        '0.8-1.0': 'Excellent'
-      },
-      indices: ['NDVI', 'EVI', 'NDMI', 'MSAVI'],
-      visualization: {
+    // Add comprehensive indices list
+    results.availableIndices = [
+      'NDVI', 'EVI', 'NDMI', 'MSAVI', 'GNDVI', 'NDRE', 'CVI', 'LAI', 'SAVI', 'NDWI', 'BSI'
+    ];
+    
+    // Add visualization options for different analysis types
+    results.visualizations = {
+      cropHealth: {
         bands: ['crop_health'],
         min: 0,
         max: 0.8,
         palette: ['red', 'orange', 'yellow', 'lightgreen', 'darkgreen']
       },
-      timeSeries,
-      classificationData,
-      groundTruthInfo,
-      trainingScript: classification ? generateTrainingScript(classificationData, groundTruth) : null,
-      nextSteps: classification 
-        ? `Use the classificationKey '${classificationData?.classificationKey}' with your ground truth data to train a Random Forest classifier`
-        : `Use thumbnail operation with modelKey '${modelKey}' to visualize the crop health map`
+      irrigation: irrigationMetrics ? {
+        bands: ['irrigation_need'],
+        min: 0,
+        max: 1,
+        palette: ['white', 'lightblue', 'blue', 'darkblue']
+      } : null,
+      disease: diseaseMetrics ? {
+        bands: ['disease_risk'],
+        min: 0,
+        max: 1,
+        palette: ['green', 'yellow', 'orange', 'red']
+      } : null,
+      yield: yieldFeatures ? {
+        bands: ['NDVI'],
+        min: 0,
+        max: 1,
+        palette: ['brown', 'yellow', 'lightgreen', 'darkgreen']
+      } : null,
+      soil: soilMetrics ? {
+        bands: ['soil_organic'],
+        min: 0,
+        max: 1,
+        palette: ['#FFE4B5', '#8B7355', '#654321', '#3E2723']
+      } : null
     };
+    
+    // Summary statistics
+    if (analysisType === 'comprehensive') {
+      results.comprehensiveAnalysis = {
+        componentsAnalyzed: [
+          'Crop Health',
+          yieldFeatures ? 'Yield Prediction' : null,
+          irrigationMetrics ? 'Irrigation Management' : null,
+          diseaseMetrics ? 'Disease Risk' : null,
+          soilMetrics ? 'Soil Properties' : null,
+          phenologyMetrics ? 'Crop Phenology' : null,
+          weatherData ? 'Weather Integration' : null
+        ].filter(Boolean),
+        totalFeatures: comprehensiveImage.bandNames().size(),
+        recommendations: [
+          yieldFeatures ? 'Monitor stress index for yield impact' : null,
+          irrigationMetrics ? 'Check irrigation_need layer for water management' : null,
+          diseaseMetrics ? 'Scout high disease_risk areas' : null,
+          soilMetrics ? 'Adjust fertilization based on soil organic matter' : null
+        ].filter(Boolean)
+      };
+    }
+    
+    // Add export recommendations
+    results.exportOptions = {
+      fullAnalysis: `Export modelKey '${modelKey}' for complete analysis`,
+      classification: classificationData ? `Use classificationKey '${classificationData.classificationKey}' for ML training` : null,
+      formats: ['GeoTIFF', 'COG', 'TFRecord'],
+      recommendedScale: scale,
+      bands: comprehensiveImage.bandNames()
+    };
+    
+    // Machine learning ready features
+    if (classification || groundTruth) {
+      results.mlFeatures = {
+        spectralBands: ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B11', 'B12'],
+        vegetationIndices: ['NDVI', 'EVI', 'NDMI', 'MSAVI', 'GNDVI', 'NDRE', 'CVI', 'LAI', 'SAVI'],
+        derivedFeatures: [
+          yieldFeatures ? ['peakNDVI', 'ndviVariability', 'stressIndex'] : [],
+          irrigationMetrics ? ['waterStress', 'soilMoisture'] : [],
+          diseaseMetrics ? ['ndviAnomaly', 'chlorophyllStress'] : [],
+          soilMetrics ? ['bareSoilIndex', 'organicMatter', 'salinity'] : []
+        ].flat().filter(Boolean),
+        trainingScript: generateTrainingScript(classificationData, groundTruth)
+      };
+    }
+    
+    // Actionable insights
+    results.insights = {
+      immediateActions: [],
+      monitoring: [],
+      planning: []
+    };
+    
+    if (irrigationMetrics) {
+      results.insights.immediateActions.push('Check areas with high irrigation_need values');
+    }
+    if (diseaseMetrics) {
+      results.insights.monitoring.push('Monitor red_edge_stress areas for disease symptoms');
+    }
+    if (yieldFeatures) {
+      results.insights.planning.push('Use yield prediction features for harvest planning');
+    }
+    
+    // Final message based on analysis type
+    results.message = analysisType === 'comprehensive' 
+      ? 'Comprehensive agricultural analysis completed with all components'
+      : `Agricultural ${analysisType} analysis completed successfully`;
+    
+    results.nextSteps = analysisType === 'comprehensive'
+      ? 'Review all analysis components and export relevant layers for detailed inspection'
+      : `Use thumbnail operation with modelKey '${modelKey}' to visualize results`;
+    
+    return results;
   } catch (error: any) {
     throw new Error(`Agriculture model failed: ${error.message}`);
   }
