@@ -9,7 +9,7 @@ import { register } from '../../registry';
 import { parseAoi } from '@/src/utils/geo';
 import { Storage } from '@google-cloud/storage';
 import { optimizer } from '@/src/utils/ee-optimizer';
-import { compositeStore } from './earth_engine_process';
+import { compositeStore, compositeMetadata } from './earth_engine_process';
 import { generateTilesOptimized } from './tiles_handler';
 import { generateTilesFast } from './tiles_fast';
 import { generateTilesDirect } from './tiles_direct';
@@ -78,6 +78,7 @@ async function generateThumbnail(params: any) {
   
   let image;
   let defaultVis = {};
+  let metadata = null;
   
   // Priority: Use stored results first
   if (ndviKey && compositeStore[ndviKey]) {
@@ -93,19 +94,31 @@ async function generateThumbnail(params: any) {
     // Use stored composite result
     image = compositeStore[compositeKey];
     
+    // Check if we have metadata about this composite
+    metadata = compositeMetadata[compositeKey];
+    
     // Determine default visualization based on what created the composite
-    if (datasetId?.includes('COPERNICUS/S2')) {
+    if (metadata?.datasetId?.includes('COPERNICUS/S2') || datasetId?.includes('COPERNICUS/S2')) {
+      // Sentinel-2 values are already scaled to 0-1 range (divided by 10000)
       defaultVis = {
         bands: ['B4', 'B3', 'B2'],
         min: 0,
         max: 0.3,
         gamma: 1.4
       };
-    } else if (datasetId?.includes('LANDSAT')) {
+    } else if (metadata?.datasetId?.includes('LANDSAT') || datasetId?.includes('LANDSAT')) {
       defaultVis = {
         bands: ['SR_B4', 'SR_B3', 'SR_B2'],
         min: 0,
         max: 3000,
+        gamma: 1.4
+      };
+    } else {
+      // Default for unknown or when no metadata - assume Sentinel-2 scaled values
+      defaultVis = {
+        bands: ['B4', 'B3', 'B2'],
+        min: 0,
+        max: 0.3,
         gamma: 1.4
       };
     }
@@ -166,6 +179,24 @@ async function generateThumbnail(params: any) {
       // If input is a string, it might be a compositeKey or datasetId
       if (compositeStore[input]) {
         image = compositeStore[input];
+        // Also get metadata if this is a composite
+        metadata = compositeMetadata[input];
+        // Set default vis based on metadata
+        if (metadata?.datasetId?.includes('COPERNICUS/S2')) {
+          defaultVis = {
+            bands: ['B4', 'B3', 'B2'],
+            min: 0,
+            max: 0.3,
+            gamma: 1.4
+          };
+        } else if (metadata?.datasetId?.includes('LANDSAT')) {
+          defaultVis = {
+            bands: ['SR_B4', 'SR_B3', 'SR_B2'],
+            min: 0,
+            max: 3000,
+            gamma: 1.4
+          };
+        }
       } else {
         // Try as dataset ID
         try {
@@ -184,11 +215,44 @@ async function generateThumbnail(params: any) {
     throw new Error('No image source provided. Use compositeKey, ndviKey, datasetId, or input');
   }
   
-  // Merge provided visParams with defaults
-  const finalVis = {
-    ...defaultVis,
-    ...visParams
-  };
+  // Smart merge of visParams - fix common mistakes
+  let finalVis = { ...defaultVis };
+  
+  if (visParams) {
+    // Check if we're dealing with Sentinel-2 data
+    const isSentinel2 = (metadata?.datasetId?.includes('COPERNICUS/S2') || 
+                        datasetId?.includes('COPERNICUS/S2') ||
+                        (input && typeof input === 'string' && input.includes('composite') && 
+                         !metadata?.datasetId?.includes('LANDSAT')));
+    
+    console.log('[Thumbnail] Dataset detection:', {
+      isSentinel2,
+      metadata: metadata?.datasetId,
+      datasetId,
+      input,
+      providedMax: visParams.max
+    });
+    
+    if (isSentinel2 && visParams.max && visParams.max > 100) {
+      // User provided raw values (e.g., 3000/4000) for scaled Sentinel-2 data
+      console.log('[AUTO-FIX] Correcting Sentinel-2 visualization: max', visParams.max, '→', visParams.max / 10000);
+      finalVis = {
+        bands: visParams.bands || defaultVis.bands,
+        min: (visParams.min || 0) / 10000,
+        max: visParams.max / 10000,
+        gamma: visParams.gamma || defaultVis.gamma,
+        palette: visParams.palette
+      };
+    } else {
+      // Use provided params merged with defaults
+      finalVis = {
+        ...defaultVis,
+        ...visParams
+      };
+    }
+    
+    console.log('[Thumbnail] Final visualization params:', finalVis);
+  }
   
   // Prepare thumbnail parameters with size constraints
   // Earth Engine has a limit on thumbnail size

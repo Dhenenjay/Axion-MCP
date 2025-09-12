@@ -13,6 +13,9 @@ import { optimizer } from '@/src/utils/ee-optimizer';
 // Store for composite results
 export const compositeStore: { [key: string]: any } = {};
 
+// Store metadata about composites for proper visualization
+export const compositeMetadata: { [key: string]: any } = {};
+
 // Main schema for the consolidated tool
 const ProcessToolSchema = z.object({
   operation: z.enum(['clip', 'mask', 'index', 'analyze', 'composite', 'terrain', 'resample', 'fcc']),
@@ -152,6 +155,15 @@ async function createComposite(params: any) {
     const compositeKey = `composite_${Date.now()}`;
     compositeStore[compositeKey] = composite;
     
+    // Store metadata for proper visualization later
+    compositeMetadata[compositeKey] = {
+      datasetId,
+      compositeType,
+      startDate,
+      endDate,
+      region
+    };
+    
     return {
       success: true,
       operation: 'composite',
@@ -196,6 +208,14 @@ async function createComposite(params: any) {
     
     const compositeKey = `composite_${Date.now()}`;
     compositeStore[compositeKey] = composite;
+    
+    // Store metadata for proper visualization later
+    compositeMetadata[compositeKey] = {
+      datasetId,
+      compositeType,
+      startDate,
+      endDate
+    };
     
     return {
       success: true,

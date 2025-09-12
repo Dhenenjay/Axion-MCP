@@ -79,12 +79,14 @@ async function calculateNDVI(params) {
         palette: ndviPalette
       };
       
+      // Apply visualization to create a properly colored RGB image
+      const ndviVisualized = ndvi.visualize(visParams);
+      
       // Get thumbnail URL with color palette
-      const thumbnailUrl = ndvi.getThumbURL({
+      const thumbnailUrl = ndviVisualized.getThumbURL({
         dimensions: '1024x1024',
         region: geometry,
-        format: 'png',
-        ...visParams
+        format: 'png'
       });
       
       // Calculate NDVI statistics
@@ -444,11 +446,13 @@ async function calculateNDWI(params) {
         palette: ndwiPalette
       };
       
-      const thumbnailUrl = ndwi.getThumbURL({
+      // Apply visualization to create a properly colored RGB image
+      const ndwiVisualized = ndwi.visualize(visParams);
+      
+      const thumbnailUrl = ndwiVisualized.getThumbURL({
         dimensions: '1024x1024',
         region: geometry,
-        format: 'png',
-        ...visParams
+        format: 'png'
       });
       
       resolve({
@@ -573,19 +577,50 @@ async function createComposite(params) {
       
       composite = composite.clip(geometry);
       
-      // Get visualization
-      const visParams = {
-        bands: ['B4', 'B3', 'B2'],
-        min: 0,
-        max: 3000,
-        gamma: 1.4
-      };
+      // Get visualization with proper parameters for Sentinel-2
+      let visParams;
       
-      const thumbnailUrl = composite.getThumbURL({
+      if (datasetId.includes('S2')) {
+        // Sentinel-2 specific visualization (True Color RGB)
+        visParams = {
+          bands: ['B4', 'B3', 'B2'],  // Red, Green, Blue
+          min: 0,
+          max: 2500,  // Adjusted for better contrast
+          gamma: 1.2
+        };
+      } else if (datasetId.includes('LANDSAT/LC08')) {
+        // Landsat 8 visualization
+        visParams = {
+          bands: ['B4', 'B3', 'B2'],  // Red, Green, Blue
+          min: 0,
+          max: 3000,
+          gamma: 1.4
+        };
+      } else if (datasetId.includes('LANDSAT/LC09')) {
+        // Landsat 9 visualization
+        visParams = {
+          bands: ['B4', 'B3', 'B2'],  // Red, Green, Blue
+          min: 0,
+          max: 3000,
+          gamma: 1.4
+        };
+      } else {
+        // Default visualization
+        visParams = {
+          bands: ['B4', 'B3', 'B2'],
+          min: 0,
+          max: 3000,
+          gamma: 1.4
+        };
+      }
+      
+      // Apply visualization to create an RGB image
+      const visualized = composite.visualize(visParams);
+      
+      const thumbnailUrl = visualized.getThumbURL({
         dimensions: '1024x1024',
         region: geometry,
-        format: 'png',
-        ...visParams
+        format: 'png'
       });
       
       resolve({

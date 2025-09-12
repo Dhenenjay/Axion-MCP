@@ -4,11 +4,11 @@ var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
 
-// node_modules/.pnpm/tsup@8.5.0_postcss@8.5.6_tsx@4.20.5_typescript@5.8.3_yaml@2.8.1/node_modules/tsup/assets/esm_shims.js
+// node_modules/tsup/assets/esm_shims.js
 import path from "path";
 import { fileURLToPath } from "url";
 var init_esm_shims = __esm({
-  "node_modules/.pnpm/tsup@8.5.0_postcss@8.5.6_tsx@4.20.5_typescript@5.8.3_yaml@2.8.1/node_modules/tsup/assets/esm_shims.js"() {
+  "node_modules/tsup/assets/esm_shims.js"() {
     "use strict";
   }
 });
@@ -2130,6 +2130,13 @@ async function createComposite(params) {
     composite = composite.clip(geometry);
     const compositeKey = `composite_${Date.now()}`;
     compositeStore[compositeKey] = composite;
+    compositeMetadata[compositeKey] = {
+      datasetId,
+      compositeType,
+      startDate,
+      endDate,
+      region
+    };
     return {
       success: true,
       operation: "composite",
@@ -2169,6 +2176,12 @@ async function createComposite(params) {
     }
     const compositeKey = `composite_${Date.now()}`;
     compositeStore[compositeKey] = composite;
+    compositeMetadata[compositeKey] = {
+      datasetId,
+      compositeType,
+      startDate,
+      endDate
+    };
     return {
       success: true,
       operation: "composite",
@@ -2504,7 +2517,7 @@ async function handler(params) {
     };
   }
 }
-var compositeStore, ProcessToolSchema;
+var compositeStore, compositeMetadata, ProcessToolSchema;
 var init_earth_engine_process = __esm({
   "src/mcp/tools/consolidated/earth_engine_process.ts"() {
     "use strict";
@@ -2512,6 +2525,7 @@ var init_earth_engine_process = __esm({
     init_registry();
     init_geo();
     compositeStore = {};
+    compositeMetadata = {};
     ProcessToolSchema = z4.object({
       operation: z4.enum(["clip", "mask", "index", "analyze", "composite", "terrain", "resample", "fcc"]),
       // Common params
@@ -2748,18 +2762,26 @@ async function generateThumbnail(params) {
     };
   } else if (compositeKey && compositeStore[compositeKey]) {
     image = compositeStore[compositeKey];
-    if (datasetId?.includes("COPERNICUS/S2")) {
+    const metadata = compositeMetadata[compositeKey];
+    if (metadata?.datasetId?.includes("COPERNICUS/S2") || datasetId?.includes("COPERNICUS/S2")) {
       defaultVis = {
         bands: ["B4", "B3", "B2"],
         min: 0,
         max: 0.3,
         gamma: 1.4
       };
-    } else if (datasetId?.includes("LANDSAT")) {
+    } else if (metadata?.datasetId?.includes("LANDSAT") || datasetId?.includes("LANDSAT")) {
       defaultVis = {
         bands: ["SR_B4", "SR_B3", "SR_B2"],
         min: 0,
         max: 3e3,
+        gamma: 1.4
+      };
+    } else {
+      defaultVis = {
+        bands: ["B4", "B3", "B2"],
+        min: 0,
+        max: 0.3,
         gamma: 1.4
       };
     }
