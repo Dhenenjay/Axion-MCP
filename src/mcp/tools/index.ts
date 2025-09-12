@@ -4,6 +4,7 @@ import './consolidated/earth_engine_data';     // Data operations: search, info,
 import './consolidated/earth_engine_system';   // System operations: auth, setup, help  
 import './consolidated/earth_engine_process';  // Processing: NDVI, NDWI, thumbnail, timeseries
 import './consolidated/earth_engine_export';   // Export operations: toAsset, toDrive, toGCS
+import './consolidated/earth_engine_map';      // Interactive map viewer for large regions
 
 // Legacy tool imports commented out - replaced by consolidated tools above
 // import './auth_check';

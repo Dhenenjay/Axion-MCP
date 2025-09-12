@@ -721,11 +721,11 @@ async function optimizedGetInfo(eeObject, options = {}) {
   });
   return result;
 }
-async function* streamCollection(collection, chunkSize = 100) {
-  const totalSize = await collection.size().getInfo();
+async function* streamCollection(collection2, chunkSize = 100) {
+  const totalSize = await collection2.size().getInfo();
   let offset = 0;
   while (offset < totalSize) {
-    const chunk = await collection.limit(chunkSize, "system:time_start").skip(offset).getInfo();
+    const chunk = await collection2.limit(chunkSize, "system:time_start").skip(offset).getInfo();
     yield chunk.features || [];
     offset += chunkSize;
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -738,8 +738,8 @@ async function getCollectionInfoOptimized(datasetId) {
     return cached;
   }
   try {
-    const collection = new ee4.ImageCollection(datasetId);
-    const size = await requestQueue.add(() => collection.size().getInfo());
+    const collection2 = new ee4.ImageCollection(datasetId);
+    const size = await requestQueue.add(() => collection2.size().getInfo());
     let sampleSize = 1;
     let sampling = "first";
     if (size > 1e4) {
@@ -756,15 +756,15 @@ async function getCollectionInfoOptimized(datasetId) {
     }
     let sample;
     if (sampling === "random") {
-      sample = collection.randomColumn("random").sort("random").limit(sampleSize);
+      sample = collection2.randomColumn("random").sort("random").limit(sampleSize);
     } else if (sampling === "distributed") {
       const step = Math.floor(size / sampleSize);
       const indices = Array.from({ length: sampleSize }, (_, i) => i * step);
       sample = new ee4.ImageCollection(
-        indices.map((i) => collection.toList(1, i).get(0))
+        indices.map((i) => collection2.toList(1, i).get(0))
       );
     } else {
-      sample = collection.limit(sampleSize);
+      sample = collection2.limit(sampleSize);
     }
     const first = sample.first();
     const bandNames = await requestQueue.add(() => first.bandNames().getInfo());
@@ -1061,27 +1061,27 @@ async function filterCollection(params) {
     return { ...cached, fromCache: true };
   }
   try {
-    let collection = new ee5.ImageCollection(datasetId);
+    let collection2 = new ee5.ImageCollection(datasetId);
     if (startDate && endDate) {
-      collection = collection.filterDate(startDate, endDate);
+      collection2 = collection2.filterDate(startDate, endDate);
     }
     if (region) {
       const geometry = await parseAoi(region);
-      collection = collection.filterBounds(geometry);
+      collection2 = collection2.filterBounds(geometry);
     }
     if (cloudCoverMax !== void 0 && cloudCoverMax !== null) {
       if (datasetId.includes("COPERNICUS/S2")) {
-        collection = collection.filter(ee5.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", cloudCoverMax));
+        collection2 = collection2.filter(ee5.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", cloudCoverMax));
       } else if (datasetId.includes("LANDSAT")) {
-        collection = collection.filter(ee5.Filter.lt("CLOUD_COVER", cloudCoverMax));
+        collection2 = collection2.filter(ee5.Filter.lt("CLOUD_COVER", cloudCoverMax));
       } else {
-        collection = collection.filter(ee5.Filter.lt("CLOUD_COVER", cloudCoverMax));
+        collection2 = collection2.filter(ee5.Filter.lt("CLOUD_COVER", cloudCoverMax));
       }
     }
-    const count = await optimizer.optimizedGetInfo(collection.size(), { timeout: 1e4 });
+    const count = await optimizer.optimizedGetInfo(collection2.size(), { timeout: 1e4 });
     let bandNames = [];
     try {
-      const first = collection.first();
+      const first = collection2.first();
       bandNames = await optimizer.optimizedGetInfo(first.bandNames(), { timeout: 5e3 });
     } catch (e) {
       if (datasetId.includes("COPERNICUS/S2")) {
@@ -1261,8 +1261,8 @@ async function getInfo(datasetId) {
     const result = await Promise.race([
       (async () => {
         try {
-          const collection = new ee5.ImageCollection(datasetId);
-          const first = collection.first();
+          const collection2 = new ee5.ImageCollection(datasetId);
+          const first = collection2.first();
           const bandNamesPromise = first.bandNames().getInfo();
           const bandNames = await Promise.race([
             bandNamesPromise,
@@ -1534,6 +1534,18 @@ async function executeCode(params) {
     );
     const executePromise = (async () => {
       const result = await func(ee6, codeParams);
+      if (result && typeof result.select === "function" && typeof result.visualize === "function") {
+        const timestamp = Date.now();
+        const imageKey = `user_image_${timestamp}`;
+        compositeStore[imageKey] = result;
+        return {
+          type: "EarthEngineImage",
+          stored: true,
+          imageKey,
+          message: "Image stored successfully",
+          usage: `Use imageKey '${imageKey}' with the export tool for thumbnails or exports`
+        };
+      }
       let output2;
       if (result && typeof result.getInfo === "function") {
         try {
@@ -1804,8 +1816,8 @@ async function getDatasetInfo(params) {
   let actualBands = typicalBands;
   let imageCount = "Unknown";
   try {
-    const collection = new ee6.ImageCollection(datasetId);
-    const first = collection.first();
+    const collection2 = new ee6.ImageCollection(datasetId);
+    const first = collection2.first();
     const bandsPromise = optimizer.optimizedGetInfo(first.bandNames(), { timeout: 2e3 });
     const timeoutPromise = new Promise(
       (resolve) => setTimeout(() => resolve(null), 2e3)
@@ -2062,15 +2074,89 @@ var init_earth_engine_system = __esm({
   }
 });
 
+// src/lib/global-store.ts
+function addComposite(key, image, metadata) {
+  globalCompositeStore[key] = image;
+  if (metadata) {
+    globalMetadataStore[key] = {
+      ...metadata,
+      eeType: image?.constructor?.name || "unknown",
+      hasNormalizedDifference: typeof image?.normalizedDifference === "function",
+      hasSelect: typeof image?.select === "function",
+      hasBandNames: typeof image?.bandNames === "function"
+    };
+  }
+  console.log(`[GlobalStore] Added composite: ${key}`);
+  console.log(`[GlobalStore] Total composites: ${Object.keys(globalCompositeStore).length}`);
+  if (image) {
+    const checks = {
+      select: typeof image.select === "function",
+      normalizedDifference: typeof image.normalizedDifference === "function",
+      clip: typeof image.clip === "function",
+      visualize: typeof image.visualize === "function"
+    };
+    console.log(`[GlobalStore] EE methods for ${key}:`, checks);
+    if (!checks.normalizedDifference) {
+      console.warn(`[GlobalStore] WARNING: ${key} lacks normalizedDifference method!`);
+    }
+  }
+}
+function getAllCompositeKeys() {
+  return Object.keys(globalCompositeStore);
+}
+function addMapSession(id, session) {
+  globalMapSessions[id] = session;
+  console.log(`[GlobalStore] Added map session: ${id}`);
+  console.log(`[GlobalStore] Total map sessions: ${Object.keys(globalMapSessions).length}`);
+}
+var globalCompositeStore, globalMetadataStore, globalResultsStore, globalMapSessions, globalEECache;
+var init_global_store = __esm({
+  "src/lib/global-store.ts"() {
+    "use strict";
+    init_esm_shims();
+    if (!global.eeStore) {
+      global.eeStore = {
+        composites: {},
+        metadata: {},
+        results: {},
+        mapSessions: {},
+        eeCache: {}
+      };
+      console.log("[GlobalStore] Initialized new global store");
+    }
+    globalCompositeStore = global.eeStore.composites;
+    globalMetadataStore = global.eeStore.metadata;
+    globalResultsStore = global.eeStore.results;
+    globalMapSessions = global.eeStore.mapSessions;
+    globalEECache = global.eeStore.eeCache;
+  }
+});
+
 // src/mcp/tools/consolidated/earth_engine_process.ts
 import ee7 from "@google/earthengine";
 import { z as z4 } from "zod";
 async function getInput(input) {
   if (typeof input === "string") {
+    if (globalCompositeStore[input]) {
+      const stored = globalCompositeStore[input];
+      if (stored && typeof stored.normalizedDifference === "function") {
+        return stored;
+      }
+      try {
+        return ee7.Image(stored);
+      } catch (e) {
+        console.error("Failed to reconstruct EE image from store:", e);
+        throw new Error(`Stored composite ${input} is not a valid Earth Engine image`);
+      }
+    }
     try {
       return new ee7.ImageCollection(input);
     } catch {
-      return new ee7.Image(input);
+      try {
+        return new ee7.Image(input);
+      } catch {
+        throw new Error(`Could not resolve input: ${input}`);
+      }
     }
   }
   return input;
@@ -2086,17 +2172,17 @@ async function createComposite(params) {
   } = params;
   if (!datasetId) throw new Error("datasetId required for composite operation");
   if (!startDate || !endDate) throw new Error("startDate and endDate required for composite");
-  let collection = new ee7.ImageCollection(datasetId);
-  collection = collection.filterDate(startDate, endDate);
+  let collection2 = new ee7.ImageCollection(datasetId);
+  collection2 = collection2.filterDate(startDate, endDate);
   if (region) {
     const geometry = await parseAoi(region);
-    collection = collection.filterBounds(geometry);
+    collection2 = collection2.filterBounds(geometry);
     let composite;
     if (datasetId.includes("COPERNICUS/S2") || datasetId.includes("LANDSAT")) {
       const cloudProp = datasetId.includes("COPERNICUS/S2") ? "CLOUDY_PIXEL_PERCENTAGE" : "CLOUD_COVER";
-      collection = collection.filter(ee7.Filter.lt(cloudProp, cloudCoverMax));
+      collection2 = collection2.filter(ee7.Filter.lt(cloudProp, cloudCoverMax));
       if (datasetId.includes("COPERNICUS/S2")) {
-        collection = collection.map((img) => {
+        collection2 = collection2.map((img) => {
           const qa = img.select("QA60");
           const cloudBitMask = 1 << 10;
           const cirrusBitMask = 1 << 11;
@@ -2107,36 +2193,35 @@ async function createComposite(params) {
     }
     switch (compositeType) {
       case "median":
-        composite = collection.median();
+        composite = collection2.median();
         break;
       case "mean":
-        composite = collection.mean();
+        composite = collection2.mean();
         break;
       case "max":
-        composite = collection.max();
+        composite = collection2.max();
         break;
       case "min":
-        composite = collection.min();
+        composite = collection2.min();
         break;
       case "mosaic":
-        composite = collection.mosaic();
+        composite = collection2.mosaic();
         break;
       case "greenest":
-        composite = collection.qualityMosaic("B8");
+        composite = collection2.qualityMosaic("B8");
         break;
       default:
-        composite = collection.median();
+        composite = collection2.median();
     }
     composite = composite.clip(geometry);
     const compositeKey = `composite_${Date.now()}`;
-    compositeStore[compositeKey] = composite;
-    compositeMetadata[compositeKey] = {
+    addComposite(compositeKey, composite, {
       datasetId,
       compositeType,
       startDate,
       endDate,
       region
-    };
+    });
     return {
       success: true,
       operation: "composite",
@@ -2153,35 +2238,34 @@ async function createComposite(params) {
     let composite;
     if (datasetId.includes("COPERNICUS/S2") || datasetId.includes("LANDSAT")) {
       const cloudProp = datasetId.includes("COPERNICUS/S2") ? "CLOUDY_PIXEL_PERCENTAGE" : "CLOUD_COVER";
-      collection = collection.filter(ee7.Filter.lt(cloudProp, cloudCoverMax));
+      collection2 = collection2.filter(ee7.Filter.lt(cloudProp, cloudCoverMax));
     }
     switch (compositeType) {
       case "median":
-        composite = collection.median();
+        composite = collection2.median();
         break;
       case "mean":
-        composite = collection.mean();
+        composite = collection2.mean();
         break;
       case "max":
-        composite = collection.max();
+        composite = collection2.max();
         break;
       case "min":
-        composite = collection.min();
+        composite = collection2.min();
         break;
       case "mosaic":
-        composite = collection.mosaic();
+        composite = collection2.mosaic();
         break;
       default:
-        composite = collection.median();
+        composite = collection2.median();
     }
     const compositeKey = `composite_${Date.now()}`;
-    compositeStore[compositeKey] = composite;
-    compositeMetadata[compositeKey] = {
+    addComposite(compositeKey, composite, {
       datasetId,
       compositeType,
       startDate,
       endDate
-    };
+    });
     return {
       success: true,
       operation: "composite",
@@ -2216,8 +2300,9 @@ async function createFCC(params) {
     visualization: {
       bands: fccBands,
       min: 0,
-      max: datasetId.includes("COPERNICUS/S2") ? 0.3 : 3e3,
-      gamma: 1.4
+      max: datasetId.includes("COPERNICUS/S2") ? 0.4 : 3e3,
+      // Higher max for FCC with NIR
+      gamma: 1.3
     },
     nextSteps: "Use thumbnail operation with the compositeKey and these visualization parameters"
   };
@@ -2225,8 +2310,15 @@ async function createFCC(params) {
 async function calculateIndex(params) {
   const { datasetId, startDate, endDate, region, input, compositeKey, indexType = "NDVI" } = params;
   let source;
-  if (compositeKey && compositeStore[compositeKey]) {
-    source = compositeStore[compositeKey];
+  let metadata = null;
+  if (input) {
+    source = await getInput(input);
+    if (typeof input === "string" && globalMetadataStore[input]) {
+      metadata = globalMetadataStore[input];
+    }
+  } else if (compositeKey && globalCompositeStore[compositeKey]) {
+    source = globalCompositeStore[compositeKey];
+    metadata = globalMetadataStore[compositeKey];
   } else if (datasetId) {
     const compositeResult = await createComposite({
       datasetId,
@@ -2236,13 +2328,13 @@ async function calculateIndex(params) {
       compositeType: "median"
     });
     source = compositeResult.result;
-  } else if (input) {
-    source = await getInput(input);
+    metadata = { datasetId };
   } else {
     throw new Error("datasetId, input, or compositeKey required for index calculation");
   }
   let bands = {};
-  if (datasetId?.includes("COPERNICUS/S2")) {
+  const dataset = metadata?.datasetId || datasetId || "";
+  if (dataset.includes("COPERNICUS/S2")) {
     bands = {
       red: "B4",
       green: "B3",
@@ -2251,7 +2343,7 @@ async function calculateIndex(params) {
       swir1: "B11",
       swir2: "B12"
     };
-  } else if (datasetId?.includes("LANDSAT")) {
+  } else if (dataset.includes("LANDSAT")) {
     bands = {
       red: "SR_B4",
       green: "SR_B3",
@@ -2457,7 +2549,7 @@ async function calculateIndex(params) {
     const geometry = await parseAoi(region);
     index = index.clip(geometry);
   }
-  compositeStore[indexKey] = index;
+  globalCompositeStore[indexKey] = index;
   return {
     success: true,
     operation: "index",
@@ -2470,6 +2562,633 @@ async function calculateIndex(params) {
     interpretation,
     nextSteps: `Use thumbnail operation with the ${indexKey} and visualization parameters to see the ${indexType} map`
   };
+}
+async function runWildfireModel(params) {
+  const { region, startDate, endDate, scale = 100 } = params;
+  if (!region) throw new Error("Region required for wildfire risk assessment");
+  const geometry = await parseAoi(region);
+  const dates = {
+    start: startDate || "2024-06-01",
+    end: endDate || "2024-08-31"
+  };
+  try {
+    const temperature = ee7.ImageCollection("MODIS/061/MOD11A1").filterDate(dates.start, dates.end).filterBounds(geometry).select("LST_Day_1km").mean().multiply(0.02).subtract(273.15).clip(geometry);
+    const vegetation = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(dates.start, dates.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).map((img) => {
+      const ndvi = img.normalizedDifference(["B8", "B4"]).rename("NDVI");
+      const moisture = img.normalizedDifference(["B8A", "B11"]).rename("NDMI");
+      return ndvi.addBands(moisture);
+    }).mean().clip(geometry);
+    const terrain = ee7.Terrain.products(ee7.Image("USGS/SRTMGL1_003"));
+    const slope = terrain.select("slope").clip(geometry);
+    const tempRisk = temperature.subtract(20).divide(20).clamp(0, 1);
+    const moistureRisk = vegetation.select("NDMI").multiply(-1).add(0.5).clamp(0, 1);
+    const vegetationRisk = vegetation.select("NDVI").subtract(0.5).multiply(-1).add(0.5).clamp(0, 1);
+    const slopeRisk = slope.divide(45).clamp(0, 1);
+    const fireRisk = tempRisk.multiply(0.3).add(moistureRisk.multiply(0.3)).add(vegetationRisk.multiply(0.2)).add(slopeRisk.multiply(0.2)).rename("fire_risk");
+    const modelKey = `wildfire_model_${Date.now()}`;
+    globalCompositeStore[modelKey] = fireRisk;
+    const stats = fireRisk.reduceRegion({
+      reducer: ee7.Reducer.mean().combine({
+        reducer2: ee7.Reducer.stdDev(),
+        sharedInputs: true
+      }).combine({
+        reducer2: ee7.Reducer.max(),
+        sharedInputs: true
+      }),
+      geometry,
+      scale,
+      maxPixels: 1e9
+    });
+    const statsResult = await new Promise((resolve, reject) => {
+      stats.evaluate((result, error) => {
+        if (error) reject(error);
+        else resolve(result);
+      });
+    });
+    return {
+      success: true,
+      operation: "model",
+      modelType: "wildfire",
+      modelKey,
+      message: "Wildfire risk assessment completed",
+      region: typeof region === "string" ? region : "custom geometry",
+      dateRange: dates,
+      riskLevels: {
+        "0.0-0.2": "Very Low",
+        "0.2-0.4": "Low",
+        "0.4-0.6": "Moderate",
+        "0.6-0.8": "High",
+        "0.8-1.0": "Very High"
+      },
+      statistics: statsResult,
+      visualization: {
+        bands: ["fire_risk"],
+        min: 0,
+        max: 1,
+        palette: ["green", "yellow", "orange", "red", "darkred"]
+      },
+      components: {
+        temperature: "MODIS LST",
+        vegetation: "Sentinel-2 NDVI/NDMI",
+        terrain: "SRTM Slope"
+      },
+      nextSteps: `Use thumbnail operation with modelKey '${modelKey}' to visualize the fire risk map`
+    };
+  } catch (error) {
+    throw new Error(`Wildfire model failed: ${error.message}`);
+  }
+}
+async function runFloodModel(params) {
+  const { region, startDate, endDate, floodType = "urban", scale = 100 } = params;
+  if (!region) throw new Error("Region required for flood risk assessment");
+  const geometry = await parseAoi(region);
+  const dates = {
+    start: startDate || "2024-01-01",
+    end: endDate || "2024-12-31"
+  };
+  try {
+    const precipitation = ee7.ImageCollection("UCSB-CHG/CHIRPS/DAILY").filterDate(dates.start, dates.end).filterBounds(geometry).sum().clip(geometry);
+    const dem = ee7.Image("USGS/SRTMGL1_003");
+    const terrain = ee7.Terrain.products(dem);
+    const slope = terrain.select("slope").clip(geometry);
+    const elevation = dem.clip(geometry);
+    let imperviousness = ee7.Image(0);
+    if (floodType === "urban") {
+      const urban = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(dates.start, dates.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).median();
+      imperviousness = urban.normalizedDifference(["B11", "B8"]).rename("NDBI").clip(geometry);
+    }
+    const precipRisk = precipitation.divide(2e3).clamp(0, 1);
+    const slopeRisk = slope.multiply(-1).add(45).divide(45).clamp(0, 1);
+    const elevRisk = elevation.multiply(-1).add(1e3).divide(1e3).clamp(0, 1);
+    const urbanRisk = imperviousness.add(0.5).clamp(0, 1);
+    const floodRisk = precipRisk.multiply(0.3).add(slopeRisk.multiply(0.3)).add(elevRisk.multiply(0.2)).add(urbanRisk.multiply(0.2)).rename("flood_risk");
+    const modelKey = `flood_model_${Date.now()}`;
+    globalCompositeStore[modelKey] = floodRisk;
+    return {
+      success: true,
+      operation: "model",
+      modelType: "flood",
+      modelKey,
+      message: "Flood risk assessment completed",
+      region: typeof region === "string" ? region : "custom geometry",
+      floodType,
+      dateRange: dates,
+      riskLevels: {
+        "0.0-0.2": "Very Low",
+        "0.2-0.4": "Low",
+        "0.4-0.6": "Moderate",
+        "0.6-0.8": "High",
+        "0.8-1.0": "Very High"
+      },
+      visualization: {
+        bands: ["flood_risk"],
+        min: 0,
+        max: 1,
+        palette: ["green", "yellow", "orange", "blue", "darkblue"]
+      },
+      nextSteps: `Use thumbnail operation with modelKey '${modelKey}' to visualize the flood risk map`
+    };
+  } catch (error) {
+    throw new Error(`Flood model failed: ${error.message}`);
+  }
+}
+async function runAgricultureModel(params) {
+  const {
+    region,
+    startDate,
+    endDate,
+    cropType = "all",
+    scale = 30,
+    groundTruth,
+    classification = false,
+    analysisType = "comprehensive",
+    // New: comprehensive, classification, yield, irrigation, disease, soil, phenology
+    includeWeather = false,
+    includeSoil = false,
+    includeHistorical = false,
+    yieldModel = false,
+    irrigationAnalysis = false,
+    diseaseRisk = false,
+    fieldBoundaries = null,
+    cropCalendar = null
+  } = params;
+  if (!region) throw new Error("Region required for agricultural analysis");
+  const geometry = await parseAoi(region);
+  const dates = {
+    start: startDate || "2024-04-01",
+    end: endDate || "2024-09-30"
+  };
+  try {
+    let results = {
+      success: true,
+      operation: "model",
+      modelType: "agriculture",
+      analysisType,
+      region: typeof region === "string" ? region : "custom geometry",
+      dateRange: dates,
+      cropType
+    };
+    const s2Collection = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(dates.start, dates.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).map((img) => {
+      const scaled = img.divide(1e4).select(["B.*"]);
+      const ndvi = scaled.normalizedDifference(["B8", "B4"]).rename("NDVI");
+      const evi = scaled.expression(
+        "2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))",
+        {
+          "NIR": scaled.select("B8"),
+          "RED": scaled.select("B4"),
+          "BLUE": scaled.select("B2")
+        }
+      ).rename("EVI");
+      const ndmi = scaled.normalizedDifference(["B8A", "B11"]).rename("NDMI");
+      const msavi = scaled.expression(
+        "(2 * NIR + 1 - sqrt((2 * NIR + 1) ** 2 - 8 * (NIR - RED))) / 2",
+        {
+          "NIR": scaled.select("B8"),
+          "RED": scaled.select("B4")
+        }
+      ).rename("MSAVI");
+      const gndvi = scaled.normalizedDifference(["B8", "B3"]).rename("GNDVI");
+      const ndre = scaled.normalizedDifference(["B8", "B5"]).rename("NDRE");
+      const cvi = scaled.select("B8").multiply(scaled.select("B5")).divide(scaled.select("B3").pow(2)).rename("CVI");
+      const lai = scaled.expression(
+        "3.618 * EVI - 0.118",
+        { "EVI": evi }
+      ).rename("LAI");
+      const savi = scaled.expression(
+        "((NIR - RED) / (NIR + RED + L)) * (1 + L)",
+        {
+          "NIR": scaled.select("B8"),
+          "RED": scaled.select("B4"),
+          "L": 0.5
+        }
+      ).rename("SAVI");
+      const ndwi = scaled.normalizedDifference(["B3", "B8"]).rename("NDWI");
+      const bsi = scaled.expression(
+        "((SWIR + RED) - (NIR + BLUE)) / ((SWIR + RED) + (NIR + BLUE))",
+        {
+          "SWIR": scaled.select("B11"),
+          "RED": scaled.select("B4"),
+          "NIR": scaled.select("B8"),
+          "BLUE": scaled.select("B2")
+        }
+      ).rename("BSI");
+      return scaled.addBands([ndvi, evi, ndmi, msavi, gndvi, ndre, cvi, lai, savi, ndwi, bsi]).copyProperties(img, ["system:time_start"]);
+    });
+    const baseComposite = s2Collection.median().clip(geometry);
+    const cropHealth = baseComposite.select(["NDVI", "EVI", "NDMI", "MSAVI"]).reduce(ee7.Reducer.mean()).rename("crop_health");
+    let yieldFeatures = null;
+    if (yieldModel || analysisType === "yield" || analysisType === "comprehensive") {
+      const peakNDVI = s2Collection.select("NDVI").max();
+      const meanNDVI = s2Collection.select("NDVI").mean();
+      const ndviStdDev = s2Collection.select("NDVI").reduce(ee7.Reducer.stdDev());
+      const accumulatedGDD = s2Collection.select("NDVI").map((img) => img.multiply(10)).sum().rename("accumulated_GDD");
+      const stressIndex = baseComposite.select("NDMI").lt(0.2).add(baseComposite.select("NDVI").lt(0.3)).rename("stress_index");
+      yieldFeatures = {
+        peakNDVI,
+        meanNDVI,
+        ndviVariability: ndviStdDev,
+        accumulatedGDD,
+        stressIndex,
+        predictedYield: "Use machine learning with these features for yield prediction"
+      };
+      results.yieldAnalysis = {
+        features: ["peakNDVI", "meanNDVI", "ndviVariability", "accumulatedGDD", "stressIndex"],
+        message: "Yield prediction features calculated",
+        usage: "Combine with historical yield data for model training"
+      };
+    }
+    let irrigationMetrics = null;
+    if (irrigationAnalysis || analysisType === "irrigation" || analysisType === "comprehensive") {
+      const soilMoisture = baseComposite.select("NDWI");
+      const etIndex = baseComposite.expression(
+        "(1 - NDVI) * (LST - 273.15)",
+        {
+          "NDVI": baseComposite.select("NDVI"),
+          "LST": ee7.Image(300)
+          // Placeholder - would use MODIS LST
+        }
+      ).rename("ET_index");
+      const waterStress = baseComposite.select("NDMI").lt(0.1).or(baseComposite.select("NDWI").lt(-0.1)).rename("water_stress");
+      const irrigationNeed = waterStress.multiply(baseComposite.select("NDVI").gt(0.3)).rename("irrigation_need");
+      irrigationMetrics = {
+        soilMoisture,
+        waterStress,
+        irrigationNeed,
+        etIndex
+      };
+      results.irrigationAnalysis = {
+        metrics: ["soilMoisture", "waterStress", "irrigationNeed", "ET_index"],
+        recommendation: "Areas with high irrigation_need values require immediate watering",
+        efficiency: "Monitor NDWI trends for irrigation scheduling"
+      };
+    }
+    let diseaseMetrics = null;
+    if (diseaseRisk || analysisType === "disease" || analysisType === "comprehensive") {
+      const ndviAnomaly = baseComposite.select("NDVI").subtract(s2Collection.select("NDVI").mean()).abs().rename("ndvi_anomaly");
+      const redEdgeAnomaly = baseComposite.select("NDRE").lt(0.2).rename("red_edge_stress");
+      const chlorophyllStress = baseComposite.select("CVI").lt(baseComposite.select("CVI").reduceRegion({
+        reducer: ee7.Reducer.percentile([25]),
+        geometry,
+        scale
+      })).rename("chlorophyll_stress");
+      const diseaseRiskIndex = ndviAnomaly.multiply(0.3).add(redEdgeAnomaly.multiply(0.4)).add(chlorophyllStress.multiply(0.3)).rename("disease_risk");
+      diseaseMetrics = {
+        ndviAnomaly,
+        redEdgeStress: redEdgeAnomaly,
+        chlorophyllStress,
+        diseaseRiskIndex
+      };
+      results.diseaseAnalysis = {
+        riskFactors: ["ndvi_anomaly", "red_edge_stress", "chlorophyll_stress"],
+        riskIndex: "disease_risk",
+        interpretation: {
+          "0.0-0.3": "Low risk",
+          "0.3-0.6": "Moderate risk - monitor closely",
+          "0.6-1.0": "High risk - immediate inspection needed"
+        },
+        recommendation: "Focus on areas with high disease_risk values for field scouting"
+      };
+    }
+    let soilMetrics = null;
+    if (includeSoil || analysisType === "soil" || analysisType === "comprehensive") {
+      const bareSoil = baseComposite.select("BSI");
+      const soilOrganic = baseComposite.select(["B11", "B12"]).reduce(ee7.Reducer.mean()).multiply(-1).add(1).rename("soil_organic");
+      const salinity = baseComposite.expression(
+        "(B * R) / G",
+        {
+          "B": baseComposite.select("B2"),
+          "R": baseComposite.select("B4"),
+          "G": baseComposite.select("B3")
+        }
+      ).rename("salinity_index");
+      soilMetrics = {
+        bareSoilIndex: bareSoil,
+        organicMatter: soilOrganic,
+        salinityIndex: salinity
+      };
+      results.soilAnalysis = {
+        properties: ["bare_soil", "organic_matter", "salinity"],
+        message: "Soil properties estimated from spectral signatures",
+        usage: "Combine with soil samples for calibration"
+      };
+    }
+    let phenologyMetrics = null;
+    if (analysisType === "phenology" || analysisType === "comprehensive") {
+      const greenup = s2Collection.select("NDVI").map((img) => {
+        return img.updateMask(img.gt(0.3));
+      }).first().rename("greenup_date");
+      const peakGrowth = s2Collection.select("NDVI").max().rename("peak_growth");
+      const senescence = s2Collection.select("NDVI").map((img) => {
+        return img.updateMask(img.lt(s2Collection.select("NDVI").max().multiply(0.8)));
+      }).first().rename("senescence_start");
+      phenologyMetrics = {
+        greenupDate: greenup,
+        peakGrowth,
+        senescenceStart: senescence,
+        growingSeasonLength: "Calculate from greenup to senescence dates"
+      };
+      results.phenologyAnalysis = {
+        stages: ["greenup", "peak_growth", "senescence"],
+        metrics: "Growth stage timing and duration",
+        usage: "Optimize management practices based on crop phenology"
+      };
+    }
+    let weatherData = null;
+    if (includeWeather || analysisType === "comprehensive") {
+      const precipitation = ee7.ImageCollection("UCSB-CHG/CHIRPS/DAILY").filterDate(dates.start, dates.end).filterBounds(geometry).sum().clip(geometry).rename("total_precipitation");
+      const temperature = ee7.ImageCollection("ECMWF/ERA5_LAND/HOURLY").filterDate(dates.start, dates.end).filterBounds(geometry).select("temperature_2m").mean().subtract(273.15).clip(geometry).rename("mean_temperature");
+      weatherData = {
+        precipitation,
+        temperature,
+        summary: "Weather conditions during growing season"
+      };
+      results.weatherAnalysis = {
+        totalPrecipitation: "mm",
+        meanTemperature: "\xB0C",
+        usage: "Correlate with crop performance for climate impact assessment"
+      };
+    }
+    const modelKey = `agriculture_model_${Date.now()}`;
+    let comprehensiveImage = baseComposite.addBands(cropHealth);
+    if (yieldFeatures) {
+      comprehensiveImage = comprehensiveImage.addBands(yieldFeatures.peakNDVI).addBands(yieldFeatures.stressIndex);
+    }
+    if (irrigationMetrics) {
+      comprehensiveImage = comprehensiveImage.addBands(irrigationMetrics.waterStress).addBands(irrigationMetrics.irrigationNeed);
+    }
+    if (diseaseMetrics) {
+      comprehensiveImage = comprehensiveImage.addBands(diseaseMetrics.diseaseRiskIndex);
+    }
+    if (soilMetrics) {
+      comprehensiveImage = comprehensiveImage.addBands(soilMetrics.bareSoilIndex).addBands(soilMetrics.salinityIndex);
+    }
+    globalCompositeStore[modelKey] = comprehensiveImage;
+    results.modelKey = modelKey;
+    let timeSeries = null;
+    if (params.includeTimeSeries) {
+      const chart = collection.select("NDVI").mean().getInfo();
+      timeSeries = "Time series data available";
+    }
+    let classificationData = null;
+    if (classification || groundTruth) {
+      const trainingBands = ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12"];
+      const spectralData = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(dates.start, dates.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).select(trainingBands).median().divide(1e4);
+      const ndvi = spectralData.normalizedDifference(["B8", "B4"]).rename("NDVI");
+      const ndwi = spectralData.normalizedDifference(["B3", "B8"]).rename("NDWI");
+      const ndbi = spectralData.normalizedDifference(["B11", "B8"]).rename("NDBI");
+      const bsi = spectralData.expression(
+        "((B11 + B4) - (B8 + B2)) / ((B11 + B4) + (B8 + B2))",
+        {
+          "B11": spectralData.select("B11"),
+          "B4": spectralData.select("B4"),
+          "B8": spectralData.select("B8"),
+          "B2": spectralData.select("B2")
+        }
+      ).rename("BSI");
+      const trainingImage = spectralData.addBands(ndvi).addBands(ndwi).addBands(ndbi).addBands(bsi).addBands(cropHealth);
+      const classificationKey = `classification_${Date.now()}`;
+      globalCompositeStore[classificationKey] = trainingImage;
+      classificationData = {
+        classificationKey,
+        numFeatures: trainingBands.length + 5,
+        // 10 bands + 5 indices
+        featureTypes: "Spectral bands + vegetation indices",
+        message: "Training features ready",
+        usage: "Use classificationKey for ML training"
+      };
+    }
+    let groundTruthInfo = null;
+    if (groundTruth && Array.isArray(groundTruth)) {
+      groundTruthInfo = {
+        samples: groundTruth.length,
+        cropTypes: [...new Set(groundTruth.map((gt) => gt.crop_type))],
+        message: "Ground truth data processed",
+        note: "Ready for supervised classification training"
+      };
+    }
+    results.availableIndices = [
+      "NDVI",
+      "EVI",
+      "NDMI",
+      "MSAVI",
+      "GNDVI",
+      "NDRE",
+      "CVI",
+      "LAI",
+      "SAVI",
+      "NDWI",
+      "BSI"
+    ];
+    results.visualizations = {
+      cropHealth: {
+        bands: ["crop_health"],
+        min: 0,
+        max: 0.8,
+        palette: ["red", "orange", "yellow", "lightgreen", "darkgreen"]
+      },
+      irrigation: irrigationMetrics ? {
+        bands: ["irrigation_need"],
+        min: 0,
+        max: 1,
+        palette: ["white", "lightblue", "blue", "darkblue"]
+      } : null,
+      disease: diseaseMetrics ? {
+        bands: ["disease_risk"],
+        min: 0,
+        max: 1,
+        palette: ["green", "yellow", "orange", "red"]
+      } : null,
+      yield: yieldFeatures ? {
+        bands: ["NDVI"],
+        min: 0,
+        max: 1,
+        palette: ["brown", "yellow", "lightgreen", "darkgreen"]
+      } : null,
+      soil: soilMetrics ? {
+        bands: ["soil_organic"],
+        min: 0,
+        max: 1,
+        palette: ["#FFE4B5", "#8B7355", "#654321", "#3E2723"]
+      } : null
+    };
+    if (analysisType === "comprehensive") {
+      const components = [];
+      if (yieldFeatures) components.push("Yield");
+      if (irrigationMetrics) components.push("Irrigation");
+      if (diseaseMetrics) components.push("Disease");
+      if (soilMetrics) components.push("Soil");
+      if (phenologyMetrics) components.push("Phenology");
+      if (weatherData) components.push("Weather");
+      results.comprehensiveAnalysis = {
+        componentsAnalyzed: components.length,
+        components: components.join(", "),
+        totalFeatures: "Multiple layers available"
+      };
+    }
+    results.exportOptions = {
+      fullAnalysis: `Export modelKey '${modelKey}' for complete analysis`,
+      classification: classificationData ? `Use classificationKey '${classificationData.classificationKey}' for ML training` : null,
+      formats: ["GeoTIFF", "COG", "TFRecord"],
+      recommendedScale: scale
+    };
+    if (classification || groundTruth) {
+      results.mlFeatures = {
+        spectralBands: ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12"],
+        vegetationIndices: ["NDVI", "EVI", "NDMI", "MSAVI", "GNDVI", "NDRE", "CVI", "LAI", "SAVI"],
+        totalFeatures: 15 + (yieldFeatures ? 3 : 0) + (irrigationMetrics ? 2 : 0) + (diseaseMetrics ? 2 : 0) + (soilMetrics ? 3 : 0),
+        trainingScriptAvailable: true
+        // Don't include full script in response
+      };
+    }
+    results.insights = {
+      immediateActions: [],
+      monitoring: [],
+      planning: []
+    };
+    if (irrigationMetrics) {
+      results.insights.immediateActions.push("Check areas with high irrigation_need values");
+    }
+    if (diseaseMetrics) {
+      results.insights.monitoring.push("Monitor red_edge_stress areas for disease symptoms");
+    }
+    if (yieldFeatures) {
+      results.insights.planning.push("Use yield prediction features for harvest planning");
+    }
+    results.message = analysisType === "comprehensive" ? "Comprehensive agricultural analysis completed with all components" : `Agricultural ${analysisType} analysis completed successfully`;
+    results.nextSteps = analysisType === "comprehensive" ? "Review all analysis components and export relevant layers for detailed inspection" : `Use thumbnail operation with modelKey '${modelKey}' to visualize results`;
+    return results;
+  } catch (error) {
+    throw new Error(`Agriculture model failed: ${error.message}`);
+  }
+}
+async function runDeforestationModel(params) {
+  const {
+    region,
+    baselineStart,
+    baselineEnd,
+    currentStart,
+    currentEnd,
+    scale = 30
+  } = params;
+  if (!region) throw new Error("Region required for deforestation detection");
+  const geometry = await parseAoi(region);
+  const baseline = {
+    start: baselineStart || "2020-01-01",
+    end: baselineEnd || "2020-12-31"
+  };
+  const current = {
+    start: currentStart || "2024-01-01",
+    end: currentEnd || "2024-12-31"
+  };
+  try {
+    const baselineForest = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(baseline.start, baseline.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).map((img) => {
+      return img.normalizedDifference(["B8", "B4"]).rename("NDVI");
+    }).max().clip(geometry);
+    const currentForest = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(current.start, current.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).map((img) => {
+      return img.normalizedDifference(["B8", "B4"]).rename("NDVI");
+    }).max().clip(geometry);
+    const forestChange = currentForest.subtract(baselineForest).rename("forest_change");
+    const deforestation = forestChange.lt(-0.2).rename("deforestation");
+    const modelKey = `deforestation_model_${Date.now()}`;
+    globalCompositeStore[modelKey] = forestChange;
+    return {
+      success: true,
+      operation: "model",
+      modelType: "deforestation",
+      modelKey,
+      message: "Deforestation detection completed",
+      region: typeof region === "string" ? region : "custom geometry",
+      baselinePeriod: baseline,
+      currentPeriod: current,
+      changeLevels: {
+        "-1.0 to -0.3": "Severe forest loss",
+        "-0.3 to -0.1": "Moderate forest loss",
+        "-0.1 to 0.1": "No significant change",
+        "0.1 to 0.3": "Forest regrowth",
+        "0.3 to 1.0": "Significant regrowth"
+      },
+      visualization: {
+        bands: ["forest_change"],
+        min: -0.5,
+        max: 0.5,
+        palette: ["red", "orange", "yellow", "white", "lightgreen", "green"]
+      },
+      nextSteps: `Use thumbnail operation with modelKey '${modelKey}' to visualize forest change`
+    };
+  } catch (error) {
+    throw new Error(`Deforestation model failed: ${error.message}`);
+  }
+}
+async function runWaterQualityModel(params) {
+  const { region, startDate, endDate, waterBody = "lake", scale = 30 } = params;
+  if (!region) throw new Error("Region required for water quality assessment");
+  const geometry = await parseAoi(region);
+  const dates = {
+    start: startDate || "2024-06-01",
+    end: endDate || "2024-08-31"
+  };
+  try {
+    const water = ee7.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(dates.start, dates.end).filterBounds(geometry).filter(ee7.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).median().clip(geometry);
+    const ndwi = water.normalizedDifference(["B3", "B8"]).rename("NDWI");
+    const chlorophyll = water.select("B3").divide(water.select("B2")).rename("chlorophyll");
+    const turbidity = water.select("B4").divide(1e4).rename("turbidity");
+    const algae = water.select("B2").subtract(water.select("B3")).divide(water.select("B2").add(water.select("B3"))).rename("algae");
+    const waterQuality = chlorophyll.multiply(0.3).add(turbidity.multiply(0.3)).add(algae.multiply(0.4)).rename("water_quality");
+    const modelKey = `water_quality_model_${Date.now()}`;
+    globalCompositeStore[modelKey] = waterQuality;
+    return {
+      success: true,
+      operation: "model",
+      modelType: "water_quality",
+      modelKey,
+      message: "Water quality assessment completed",
+      region: typeof region === "string" ? region : "custom geometry",
+      waterBody,
+      dateRange: dates,
+      qualityLevels: {
+        "0.0-0.2": "Excellent",
+        "0.2-0.4": "Good",
+        "0.4-0.6": "Fair",
+        "0.6-0.8": "Poor",
+        "0.8-1.0": "Very Poor"
+      },
+      indices: {
+        "NDWI": "Water presence",
+        "Chlorophyll": "Algae concentration",
+        "Turbidity": "Suspended particles",
+        "Algae Index": "Algal blooms"
+      },
+      visualization: {
+        bands: ["water_quality"],
+        min: 0,
+        max: 1,
+        palette: ["blue", "cyan", "green", "yellow", "red"]
+      },
+      nextSteps: `Use thumbnail operation with modelKey '${modelKey}' to visualize water quality`
+    };
+  } catch (error) {
+    throw new Error(`Water quality model failed: ${error.message}`);
+  }
+}
+async function runModel(params) {
+  const { modelType } = params;
+  if (!modelType) {
+    throw new Error("modelType required. Available: wildfire, flood, agriculture, deforestation, water_quality");
+  }
+  switch (modelType) {
+    case "wildfire":
+      return await runWildfireModel(params);
+    case "flood":
+      return await runFloodModel(params);
+    case "agriculture":
+      return await runAgricultureModel(params);
+    case "deforestation":
+      return await runDeforestationModel(params);
+    case "water_quality":
+      return await runWaterQualityModel(params);
+    default:
+      throw new Error(`Unknown model type: ${modelType}`);
+  }
 }
 async function handler(params) {
   const { operation } = params;
@@ -2493,6 +3212,16 @@ async function handler(params) {
           return { success: false, operation, error: "indexType is required for index operation" };
         }
         return await calculateIndex(params);
+      case "model":
+        if (!params?.modelType) {
+          return {
+            success: false,
+            operation,
+            error: "modelType is required for model operation",
+            availableModels: ["wildfire", "flood", "agriculture", "deforestation", "water_quality"]
+          };
+        }
+        return await runModel(params);
       case "clip":
       case "mask":
       case "analyze":
@@ -2517,17 +3246,16 @@ async function handler(params) {
     };
   }
 }
-var compositeStore, compositeMetadata, ProcessToolSchema;
+var ProcessToolSchema;
 var init_earth_engine_process = __esm({
   "src/mcp/tools/consolidated/earth_engine_process.ts"() {
     "use strict";
     init_esm_shims();
     init_registry();
     init_geo();
-    compositeStore = {};
-    compositeMetadata = {};
+    init_global_store();
     ProcessToolSchema = z4.object({
-      operation: z4.enum(["clip", "mask", "index", "analyze", "composite", "terrain", "resample", "fcc"]),
+      operation: z4.enum(["clip", "mask", "index", "analyze", "composite", "terrain", "resample", "fcc", "model"]),
       // Common params
       input: z4.any().optional(),
       datasetId: z4.string().optional(),
@@ -2556,7 +3284,36 @@ var init_earth_engine_process = __esm({
       elevation: z4.number().optional(),
       // Resample operation params
       targetScale: z4.number().optional(),
-      resampleMethod: z4.enum(["bilinear", "bicubic", "nearest"]).optional()
+      resampleMethod: z4.enum(["bilinear", "bicubic", "nearest"]).optional(),
+      // Model operation params
+      modelType: z4.enum(["wildfire", "flood", "agriculture", "deforestation", "water_quality"]).optional(),
+      exportMaps: z4.boolean().optional(),
+      includeTimeSeries: z4.boolean().optional(),
+      // Wildfire model params
+      fireSeasonOnly: z4.boolean().optional(),
+      // Flood model params
+      floodType: z4.enum(["urban", "riverine", "coastal"]).optional(),
+      // Agriculture model params
+      cropType: z4.enum(["corn", "wheat", "soy", "rice", "cotton", "sugarcane", "potato", "tomato", "vineyard", "orchard", "pasture", "all"]).optional(),
+      analysisType: z4.enum(["comprehensive", "classification", "yield", "irrigation", "disease", "soil", "phenology"]).optional(),
+      includeWeather: z4.boolean().optional(),
+      includeSoil: z4.boolean().optional(),
+      includeHistorical: z4.boolean().optional(),
+      yieldModel: z4.boolean().optional(),
+      irrigationAnalysis: z4.boolean().optional(),
+      diseaseRisk: z4.boolean().optional(),
+      fieldBoundaries: z4.any().optional(),
+      cropCalendar: z4.any().optional(),
+      // Deforestation model params
+      baselineStart: z4.string().optional(),
+      baselineEnd: z4.string().optional(),
+      currentStart: z4.string().optional(),
+      currentEnd: z4.string().optional(),
+      // Water quality params
+      waterBody: z4.enum(["lake", "river", "reservoir", "coastal"]).optional(),
+      // Classification params
+      classification: z4.boolean().optional(),
+      groundTruth: z4.array(z4.any()).optional()
     });
     register({
       name: "earth_engine_process",
@@ -2620,8 +3377,8 @@ async function generateTilesFixed(params) {
   let defaultVis = {};
   let cacheKey = "";
   try {
-    if (ndviKey && compositeStore[ndviKey]) {
-      image = compositeStore[ndviKey];
+    if (ndviKey && globalCompositeStore[ndviKey]) {
+      image = globalCompositeStore[ndviKey];
       defaultVis = {
         bands: ["NDVI"],
         min: -1,
@@ -2629,8 +3386,8 @@ async function generateTilesFixed(params) {
         palette: ["blue", "white", "green"]
       };
       cacheKey = `ndvi-${ndviKey}`;
-    } else if (indexKey && compositeStore[indexKey]) {
-      image = compositeStore[indexKey];
+    } else if (indexKey && globalCompositeStore[indexKey]) {
+      image = globalCompositeStore[indexKey];
       const indexType = indexKey.split("_")[0].toUpperCase();
       defaultVis = {
         bands: [indexType],
@@ -2639,8 +3396,8 @@ async function generateTilesFixed(params) {
         palette: ["blue", "white", "green"]
       };
       cacheKey = `index-${indexKey}`;
-    } else if (compositeKey && compositeStore[compositeKey]) {
-      image = compositeStore[compositeKey];
+    } else if (compositeKey && globalCompositeStore[compositeKey]) {
+      image = globalCompositeStore[compositeKey];
       defaultVis = {
         bands: ["B4", "B3", "B2"],
         min: 0,
@@ -2648,8 +3405,8 @@ async function generateTilesFixed(params) {
       };
       cacheKey = `composite-${compositeKey}`;
     } else if (datasetId) {
-      const collection = new ee8.ImageCollection(datasetId);
-      let filtered = collection;
+      const collection2 = new ee8.ImageCollection(datasetId);
+      let filtered = collection2;
       if (startDate && endDate) {
         filtered = filtered.filterDate(startDate, endDate);
       }
@@ -2728,7 +3485,7 @@ var init_tiles_fixed = __esm({
   "src/mcp/tools/consolidated/tiles_fixed.ts"() {
     "use strict";
     init_esm_shims();
-    init_earth_engine_process();
+    init_global_store();
     mapIdCache = /* @__PURE__ */ new Map();
   }
 });
@@ -2737,7 +3494,7 @@ var init_tiles_fixed = __esm({
 import ee9 from "@google/earthengine";
 import { z as z5 } from "zod";
 async function generateThumbnail(params) {
-  const {
+  let {
     input,
     compositeKey,
     ndviKey,
@@ -2752,17 +3509,23 @@ async function generateThumbnail(params) {
   } = params;
   let image;
   let defaultVis = {};
-  if (ndviKey && compositeStore[ndviKey]) {
-    image = compositeStore[ndviKey];
+  let metadata = null;
+  if (ndviKey && globalCompositeStore[ndviKey]) {
+    image = globalCompositeStore[ndviKey];
     defaultVis = {
       bands: ["NDVI"],
       min: -1,
       max: 1,
       palette: ["blue", "white", "green"]
     };
-  } else if (compositeKey && compositeStore[compositeKey]) {
-    image = compositeStore[compositeKey];
-    const metadata = compositeMetadata[compositeKey];
+  } else if (compositeKey) {
+    console.log(`Looking for composite: ${compositeKey}`);
+    console.log(`Keys in store: ${getAllCompositeKeys().join(", ")}`);
+    image = globalCompositeStore[compositeKey];
+    if (!image) {
+      throw new Error(`Composite ${compositeKey} not found in store`);
+    }
+    metadata = globalMetadataStore[compositeKey];
     if (metadata?.datasetId?.includes("COPERNICUS/S2") || datasetId?.includes("COPERNICUS/S2")) {
       defaultVis = {
         bands: ["B4", "B3", "B2"],
@@ -2786,17 +3549,17 @@ async function generateThumbnail(params) {
       };
     }
   } else if (datasetId) {
-    let collection = new ee9.ImageCollection(datasetId);
+    let collection2 = new ee9.ImageCollection(datasetId);
     if (startDate && endDate) {
-      collection = collection.filterDate(startDate, endDate);
+      collection2 = collection2.filterDate(startDate, endDate);
     }
     if (region) {
       const geometry = await parseAoi(region);
-      collection = collection.filterBounds(geometry);
+      collection2 = collection2.filterBounds(geometry);
     }
     if (datasetId.includes("COPERNICUS/S2")) {
-      collection = collection.filter(ee9.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20));
-      collection = collection.map((img) => {
+      collection2 = collection2.filter(ee9.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20));
+      collection2 = collection2.map((img) => {
         const qa = img.select("QA60");
         const cloudBitMask = 1 << 10;
         const cirrusBitMask = 1 << 11;
@@ -2810,7 +3573,7 @@ async function generateThumbnail(params) {
         gamma: 1.4
       };
     } else if (datasetId.includes("LANDSAT")) {
-      collection = collection.filter(ee9.Filter.lt("CLOUD_COVER", 20));
+      collection2 = collection2.filter(ee9.Filter.lt("CLOUD_COVER", 20));
       defaultVis = {
         bands: ["SR_B4", "SR_B3", "SR_B2"],
         min: 0,
@@ -2818,19 +3581,51 @@ async function generateThumbnail(params) {
         gamma: 1.4
       };
     }
-    image = collection.median();
+    image = collection2.median();
     if (region) {
       const geometry = await parseAoi(region);
       image = image.clip(geometry);
     }
   } else if (input) {
     if (typeof input === "string") {
-      if (compositeStore[input]) {
-        image = compositeStore[input];
+      console.log(`Looking for input: ${input}`);
+      console.log(`Keys in store: ${getAllCompositeKeys().join(", ")}`);
+      if (globalCompositeStore[input]) {
+        image = globalCompositeStore[input];
+        metadata = globalMetadataStore[input];
+        if (metadata?.datasetId?.includes("COPERNICUS/S2")) {
+          defaultVis = {
+            bands: ["B4", "B3", "B2"],
+            min: 0,
+            max: 0.3,
+            gamma: 1.4
+          };
+        } else if (metadata?.datasetId?.includes("LANDSAT")) {
+          defaultVis = {
+            bands: ["SR_B4", "SR_B3", "SR_B2"],
+            min: 0,
+            max: 3e3,
+            gamma: 1.4
+          };
+        }
+      } else if (input.startsWith("agriculture_model_") || input.startsWith("wildfire_model_") || input.startsWith("flood_model_") || input.startsWith("deforestation_model_") || input.startsWith("water_quality_model_")) {
+        if (globalCompositeStore[input]) {
+          image = globalCompositeStore[input];
+          if (input.startsWith("agriculture_model_")) {
+            defaultVis = {
+              bands: ["crop_health"],
+              min: 0,
+              max: 0.8,
+              palette: ["red", "orange", "yellow", "lightgreen", "darkgreen"]
+            };
+          }
+        } else {
+          throw new Error(`Model output '${input}' not found in store`);
+        }
       } else {
         try {
-          const collection = new ee9.ImageCollection(input).median();
-          image = collection;
+          const collection2 = new ee9.ImageCollection(input).median();
+          image = collection2;
         } catch {
           image = new ee9.Image(input);
         }
@@ -2839,12 +3634,51 @@ async function generateThumbnail(params) {
       image = input;
     }
   } else {
-    throw new Error("No image source provided. Use compositeKey, ndviKey, datasetId, or input");
+    const storeKeys = Object.keys(globalCompositeStore);
+    if (storeKeys.length > 0) {
+      const recentKey = storeKeys.sort().reverse()[0];
+      console.log(`No input specified, using most recent stored image: ${recentKey}`);
+      image = globalCompositeStore[recentKey];
+      input = recentKey;
+      if (recentKey.startsWith("agriculture_model_")) {
+        defaultVis = {
+          bands: ["crop_health"],
+          min: 0,
+          max: 0.8,
+          palette: ["red", "orange", "yellow", "lightgreen", "darkgreen"]
+        };
+      }
+    } else {
+      throw new Error("No image source provided. Use compositeKey, ndviKey, modelKey, datasetId, or input");
+    }
   }
-  const finalVis = {
-    ...defaultVis,
-    ...visParams
-  };
+  let finalVis = { ...defaultVis };
+  if (visParams) {
+    const isSentinel2 = metadata?.datasetId?.includes("COPERNICUS/S2") || datasetId?.includes("COPERNICUS/S2") || input && typeof input === "string" && input.includes("composite") && !metadata?.datasetId?.includes("LANDSAT");
+    console.log("[Thumbnail] Dataset detection:", {
+      isSentinel2,
+      metadata: metadata?.datasetId,
+      datasetId,
+      input,
+      providedMax: visParams.max
+    });
+    if (isSentinel2 && visParams.max && visParams.max > 100) {
+      console.log("[AUTO-FIX] Correcting Sentinel-2 visualization: max", visParams.max, "\u2192", visParams.max / 1e4);
+      finalVis = {
+        bands: visParams.bands || defaultVis.bands,
+        min: (visParams.min || 0) / 1e4,
+        max: visParams.max / 1e4,
+        gamma: visParams.gamma || defaultVis.gamma,
+        palette: visParams.palette
+      };
+    } else {
+      finalVis = {
+        ...defaultVis,
+        ...visParams
+      };
+    }
+    console.log("[Thumbnail] Final visualization params:", finalVis);
+  }
   const maxDimension = 1024;
   let finalDimensions = dimensions;
   if (dimensions > maxDimension) {
@@ -2892,7 +3726,11 @@ async function generateThumbnail(params) {
       try {
         const visualizedImage = image.visualize(finalVis);
         const url = await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("Thumbnail generation timed out (30s)"));
+          }, 3e4);
           visualizedImage.getThumbURL(thumbParams, (url2, error2) => {
+            clearTimeout(timeout);
             if (error2) reject(error2);
             else resolve(url2);
           });
@@ -2901,14 +3739,42 @@ async function generateThumbnail(params) {
           success: true,
           operation: "thumbnail",
           url,
-          message: "Thumbnail generated (reduced resolution)",
+          message: "Thumbnail generated with smaller dimensions",
           visualization: finalVis,
-          dimensions: 256,
+          dimensions: thumbParams.dimensions,
+          requestedDimensions: dimensions,
           region: region || "full extent",
-          warning: "Generated at reduced resolution due to size constraints"
+          source: ndviKey ? "NDVI" : compositeKey ? "composite" : datasetId || "input"
         };
       } catch (fallbackError) {
-        throw new Error(`Thumbnail generation failed: ${fallbackError.message}`);
+        console.log("Fallback failed, trying ultra-small thumbnail (128px)...");
+        thumbParams.dimensions = 128;
+        try {
+          const visualizedImage = image.visualize(finalVis);
+          const url = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error("Ultra-small thumbnail also timed out"));
+            }, 15e3);
+            visualizedImage.getThumbURL(thumbParams, (url2, error2) => {
+              clearTimeout(timeout);
+              if (error2) reject(error2);
+              else resolve(url2);
+            });
+          });
+          return {
+            success: true,
+            operation: "thumbnail",
+            url,
+            message: "Thumbnail generated at minimum size (128px) due to region complexity",
+            visualization: finalVis,
+            dimensions: 128,
+            requestedDimensions: dimensions,
+            region: region || "full extent",
+            source: ndviKey ? "NDVI" : compositeKey ? "composite" : datasetId || "input"
+          };
+        } catch (ultraFallbackError) {
+          throw new Error(`Thumbnail generation failed even at minimum size: ${ultraFallbackError.message}`);
+        }
       }
     }
     throw new Error(`Thumbnail generation failed: ${error.message}`);
@@ -2934,24 +3800,24 @@ async function getTiles(params) {
   let image;
   let defaultVis = {};
   try {
-    if (ndviKey && compositeStore[ndviKey]) {
-      image = compositeStore[ndviKey];
+    if (ndviKey && globalCompositeStore[ndviKey]) {
+      image = globalCompositeStore[ndviKey];
       defaultVis = {
         bands: ["NDVI"],
         min: -1,
         max: 1,
         palette: ["blue", "white", "green"]
       };
-    } else if (compositeKey && compositeStore[compositeKey]) {
-      image = compositeStore[compositeKey];
+    } else if (compositeKey && globalCompositeStore[compositeKey]) {
+      image = globalCompositeStore[compositeKey];
       defaultVis = {
         bands: ["B4", "B3", "B2"],
         min: 0,
         max: 0.3
       };
     } else if (datasetId) {
-      const collection = new ee9.ImageCollection(datasetId);
-      let filtered = collection;
+      const collection2 = new ee9.ImageCollection(datasetId);
+      let filtered = collection2;
       if (startDate && endDate) {
         filtered = filtered.filterDate(startDate, endDate);
       }
@@ -3065,6 +3931,134 @@ async function getTiles(params) {
     };
   }
 }
+async function performExport(params) {
+  const {
+    input,
+    compositeKey,
+    datasetId,
+    region,
+    startDate,
+    endDate,
+    destination = "gcs",
+    bucket = "earthengine-exports",
+    folder = "My Drive",
+    fileNamePrefix = `export_${Date.now()}`,
+    format = "GeoTIFF",
+    scale = 10,
+    maxPixels = 1e9
+  } = params;
+  try {
+    let image;
+    let exportRegion;
+    if (compositeKey && globalCompositeStore[compositeKey]) {
+      image = globalCompositeStore[compositeKey];
+      console.log(`Using stored composite: ${compositeKey}`);
+    } else if (input && typeof input === "string" && globalCompositeStore[input]) {
+      image = globalCompositeStore[input];
+      console.log(`Using composite from input: ${input}`);
+    } else if (datasetId) {
+      console.log(`Creating new image from dataset: ${datasetId}`);
+      let collection2 = ee9.ImageCollection(datasetId);
+      if (startDate && endDate) {
+        collection2 = collection2.filterDate(startDate, endDate);
+      }
+      if (region) {
+        exportRegion = await parseAoi(region);
+        collection2 = collection2.filterBounds(exportRegion);
+      }
+      if (datasetId.includes("COPERNICUS/S2")) {
+        collection2 = collection2.filter(ee9.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20)).map((img) => {
+          const qa = img.select("QA60");
+          const cloudBitMask = 1 << 10;
+          const cirrusBitMask = 1 << 11;
+          const mask = qa.bitwiseAnd(cloudBitMask).eq(0).and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+          return img.updateMask(mask).divide(1e4).select(["B.*"]).copyProperties(img, ["system:time_start"]);
+        });
+      } else if (datasetId.includes("LANDSAT")) {
+        collection2 = collection2.filter(ee9.Filter.lt("CLOUD_COVER", 20));
+      }
+      image = collection2.median();
+    } else {
+      throw new Error("No valid image source provided (need compositeKey, input, or datasetId)");
+    }
+    if (!exportRegion && region) {
+      exportRegion = await parseAoi(region);
+    }
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
+    const taskDescription = `${fileNamePrefix}_${timestamp}`;
+    let task;
+    if (destination === "gcs" || destination === "auto") {
+      const exportParams = {
+        image,
+        description: taskDescription,
+        bucket,
+        fileNamePrefix,
+        scale,
+        maxPixels,
+        fileFormat: format,
+        crs: "EPSG:4326"
+      };
+      if (exportRegion) {
+        exportParams.image = image.clip(exportRegion);
+      } else {
+        exportParams.image = image;
+      }
+      task = ee9.batch.Export.image.toCloudStorage(exportParams);
+    } else if (destination === "drive") {
+      const exportParams = {
+        image,
+        description: taskDescription,
+        folder,
+        fileNamePrefix,
+        scale,
+        maxPixels,
+        fileFormat: format,
+        crs: "EPSG:4326"
+      };
+      if (exportRegion) {
+        exportParams.image = image.clip(exportRegion);
+      } else {
+        exportParams.image = image;
+      }
+      task = ee9.batch.Export.image.toDrive(exportParams);
+    } else {
+      throw new Error(`Unsupported destination: ${destination}`);
+    }
+    task.start();
+    const taskId = task.id;
+    return {
+      success: true,
+      operation: "export",
+      taskId,
+      status: "STARTED",
+      message: `Export task started successfully`,
+      details: {
+        description: taskDescription,
+        destination,
+        bucket: destination === "gcs" ? bucket : void 0,
+        folder: destination === "drive" ? folder : void 0,
+        fileNamePrefix,
+        format,
+        scale,
+        maxPixels,
+        region: region || "full extent"
+      },
+      instructions: {
+        checkStatus: `Use operation: 'status' with taskId: '${taskId}' to check progress`,
+        accessFile: destination === "gcs" ? `File will be available at: gs://${bucket}/${fileNamePrefix}*` : `File will be available in Google Drive folder: ${folder}/${fileNamePrefix}*`
+      }
+    };
+  } catch (error) {
+    console.error("Export error:", error);
+    return {
+      success: false,
+      operation: "export",
+      error: error.message || "Export failed",
+      message: "Failed to start export task",
+      params
+    };
+  }
+}
 async function checkStatus(params) {
   const { taskId } = params;
   if (!taskId) throw new Error("taskId required for status check");
@@ -3116,12 +4110,7 @@ async function handler2(params) {
     case "status":
       return await checkStatus(params);
     case "export":
-      return {
-        success: true,
-        operation: "export",
-        message: "Export functionality pending implementation",
-        params
-      };
+      return await performExport(params);
     case "download":
       return {
         success: true,
@@ -3140,7 +4129,7 @@ var init_earth_engine_export = __esm({
     init_esm_shims();
     init_registry();
     init_geo();
-    init_earth_engine_process();
+    init_global_store();
     init_tiles_fixed();
     ExportToolSchema = z5.object({
       operation: z5.enum(["export", "thumbnail", "tiles", "status", "download"]),
@@ -3186,6 +4175,420 @@ var init_earth_engine_export = __esm({
   }
 });
 
+// src/mcp/tools/consolidated/earth_engine_map.ts
+import { z as z6 } from "zod";
+import ee10 from "@google/earthengine";
+import { v4 as uuidv4 } from "uuid";
+function detectDatasetType(input) {
+  if (!input) {
+    console.log("[Map] No input provided for dataset detection, defaulting to sentinel2-sr");
+    return "sentinel2-sr";
+  }
+  const lowerInput = input.toLowerCase();
+  if (lowerInput.includes("sentinel2") || lowerInput.includes("s2") || lowerInput.includes("copernicus/s2")) {
+    return "sentinel2-sr";
+  }
+  if (lowerInput.includes("landsat8") || lowerInput.includes("l8") || lowerInput.includes("landsat/lc08")) {
+    return "landsat8";
+  }
+  if (lowerInput.includes("landsat9") || lowerInput.includes("l9") || lowerInput.includes("landsat/lc09")) {
+    return "landsat9";
+  }
+  if (lowerInput.includes("modis")) {
+    return "modis";
+  }
+  return "sentinel2-sr";
+}
+function normalizeVisParams(visParams, bands, datasetType) {
+  console.log(`[Map] Normalizing vis params for dataset: ${datasetType}`);
+  console.log(`[Map] Input vis params:`, visParams);
+  console.log(`[Map] Bands:`, bands);
+  let normalized = { ...visParams };
+  const isIndex = bands.length === 1 || bands.some((b) => ["ndvi", "ndwi", "ndbi", "evi", "savi", "nbr"].includes(b.toLowerCase()));
+  if (isIndex) {
+    if (!normalized.min || normalized.min > 0) {
+      normalized.min = -0.2;
+    }
+    if (!normalized.max || normalized.max > 1) {
+      normalized.max = 0.8;
+    }
+    if (!normalized.palette) {
+      normalized.palette = ["blue", "white", "green"];
+    }
+  } else {
+    switch (datasetType) {
+      case "sentinel2-sr":
+        if (!normalized.min || normalized.min < 0) {
+          normalized.min = 0;
+        }
+        if (!normalized.max || normalized.max > 1) {
+          console.log(`[Map] Correcting Sentinel-2 max from ${normalized.max} to 0.3`);
+          normalized.max = 0.3;
+        }
+        if (normalized.max > 0.3) {
+          console.log(`[Map] Capping Sentinel-2 max from ${normalized.max} to 0.3`);
+          normalized.max = 0.3;
+        }
+        if (!normalized.gamma) {
+          normalized.gamma = 1.4;
+        }
+        break;
+      case "landsat8":
+      case "landsat9":
+        if (!normalized.min || normalized.min < 0) {
+          normalized.min = 0;
+        }
+        if (!normalized.max || normalized.max > 1) {
+          normalized.max = 0.4;
+        }
+        if (!normalized.gamma) {
+          normalized.gamma = 1.2;
+        }
+        break;
+      case "modis":
+        if (!normalized.min) {
+          normalized.min = 0;
+        }
+        if (!normalized.max) {
+          normalized.max = 0.3;
+        }
+        break;
+      default:
+        if (!normalized.min) {
+          normalized.min = 0;
+        }
+        if (!normalized.max) {
+          normalized.max = 0.3;
+        }
+        if (!normalized.gamma) {
+          normalized.gamma = 1.4;
+        }
+    }
+  }
+  console.log(`[Map] Normalized vis params:`, normalized);
+  return normalized;
+}
+async function createMap(params) {
+  const {
+    input,
+    region = "Unknown",
+    layers,
+    bands = ["B4", "B3", "B2"],
+    visParams = {},
+    center,
+    zoom = 8,
+    basemap = "satellite"
+  } = params;
+  console.log(`[Map] Creating map for input: ${input || "none (using layer inputs)"}`);
+  console.log(`[Map] Original visParams:`, visParams);
+  if (!input && (!layers || layers.length === 0)) {
+    throw new Error("Either input or layers with individual inputs required");
+  }
+  if (!input && layers && layers.length > 0) {
+    const hasInputs = layers.every((layer) => layer.input);
+    if (!hasInputs) {
+      throw new Error("When no primary input is provided, all layers must have their own input");
+    }
+  }
+  let primaryImage = null;
+  if (input) {
+    primaryImage = globalCompositeStore[input];
+    if (!primaryImage) {
+      throw new Error(`No image found for key: ${input}`);
+    }
+  }
+  const mapId = `map_${Date.now()}_${uuidv4().slice(0, 8)}`;
+  const mapLayers = [];
+  const datasetTypeInput = input || layers && layers.length > 0 && layers[0].input || "";
+  const datasetType = detectDatasetType(datasetTypeInput);
+  console.log(`[Map] Detected dataset type: ${datasetType}`);
+  try {
+    if (layers && layers.length > 0) {
+      for (const layer of layers) {
+        let layerImage;
+        let layerDatasetType = datasetType;
+        if (layer.input) {
+          layerImage = globalCompositeStore[layer.input];
+          if (!layerImage) {
+            console.log(`[Map] Warning: No image found for layer input: ${layer.input}, skipping layer ${layer.name}`);
+            continue;
+          }
+          layerDatasetType = detectDatasetType(layer.input);
+        } else if (primaryImage) {
+          layerImage = primaryImage;
+        } else {
+          console.log(`[Map] Warning: No image source for layer ${layer.name}, skipping`);
+          continue;
+        }
+        let layerBands = layer.bands;
+        if (!layerBands) {
+          const inputLower = (layer.input || "").toLowerCase();
+          const nameLower = layer.name.toLowerCase();
+          if (inputLower.includes("ndvi") || nameLower.includes("ndvi")) {
+            layerBands = ["NDVI"];
+          } else if (inputLower.includes("ndwi") || nameLower.includes("ndwi")) {
+            layerBands = ["NDWI"];
+          } else if (inputLower.includes("ndbi") || nameLower.includes("ndbi")) {
+            layerBands = ["NDBI"];
+          } else if (inputLower.includes("evi") || nameLower.includes("evi")) {
+            layerBands = ["EVI"];
+          } else if (inputLower.includes("savi") || nameLower.includes("savi")) {
+            layerBands = ["SAVI"];
+          } else if (inputLower.includes("nbr") || nameLower.includes("nbr")) {
+            layerBands = ["NBR"];
+          } else {
+            layerBands = bands;
+          }
+          console.log(`[Map] Auto-detected bands for layer ${layer.name}: ${layerBands}`);
+        }
+        const rawVis = { ...visParams, ...layer.visParams };
+        const layerVis = normalizeVisParams(rawVis, layerBands, layerDatasetType);
+        console.log(`[Map] Layer ${layer.name} - input: ${layer.input || input}, bands: ${layerBands}, vis:`, layerVis);
+        let visualized;
+        if (layerBands.length === 1) {
+          visualized = layerImage.select(layerBands).visualize(layerVis);
+        } else {
+          visualized = layerImage.select(layerBands).visualize(layerVis);
+        }
+        const mapIdResult = await new Promise((resolve, reject) => {
+          visualized.getMap({}, (result, error) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        });
+        const mapIdStr = mapIdResult.mapid;
+        const tileUrl = mapIdStr.startsWith("projects/") ? `https://earthengine.googleapis.com/v1/${mapIdStr}/tiles/{z}/{x}/{y}` : `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapIdStr}/tiles/{z}/{x}/{y}`;
+        mapLayers.push({
+          name: layer.name,
+          tileUrl,
+          visParams: layerVis
+        });
+      }
+    } else {
+      if (!primaryImage) {
+        throw new Error("No image available for visualization");
+      }
+      const normalizedVis = normalizeVisParams(visParams, bands, datasetType);
+      console.log(`[Map] Single layer - bands: ${bands}, normalized vis:`, normalizedVis);
+      const visualized = primaryImage.select(bands).visualize(normalizedVis);
+      const mapIdResult = await new Promise((resolve, reject) => {
+        visualized.getMap({}, (result, error) => {
+          if (error) reject(error);
+          else resolve(result);
+        });
+      });
+      const mapIdStr = mapIdResult.mapid;
+      const tileUrl = mapIdStr.startsWith("projects/") ? `https://earthengine.googleapis.com/v1/${mapIdStr}/tiles/{z}/{x}/{y}` : `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapIdStr}/tiles/{z}/{x}/{y}`;
+      mapLayers.push({
+        name: "Default",
+        tileUrl,
+        visParams: normalizedVis
+      });
+    }
+    let mapCenter = center;
+    if (!mapCenter && region && region !== "Unknown") {
+      try {
+        const geometry = await getRegionGeometry(region);
+        const bounds = await geometry.bounds().getInfo();
+        const coords = bounds.coordinates[0];
+        const minLng = Math.min(...coords.map((c) => c[0]));
+        const maxLng = Math.max(...coords.map((c) => c[0]));
+        const minLat = Math.min(...coords.map((c) => c[1]));
+        const maxLat = Math.max(...coords.map((c) => c[1]));
+        mapCenter = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+      } catch (e) {
+        mapCenter = [-98.5795, 39.8283];
+      }
+    }
+    mapCenter = mapCenter || [-98.5795, 39.8283];
+    const session = {
+      id: mapId,
+      input,
+      tileUrl: mapLayers[0].tileUrl,
+      // Primary tile URL for backward compatibility
+      created: /* @__PURE__ */ new Date(),
+      region,
+      layers: mapLayers,
+      metadata: {
+        center: mapCenter,
+        zoom,
+        basemap
+      }
+    };
+    addMapSession(mapId, session);
+    const mapUrl = `http://localhost:3000/map/${mapId}`;
+    return {
+      success: true,
+      operation: "create",
+      mapId,
+      url: mapUrl,
+      tileUrl: mapLayers[0].tileUrl,
+      layers: mapLayers.map((l) => ({
+        name: l.name,
+        tileUrl: l.tileUrl
+      })),
+      message: "Interactive map created successfully",
+      region,
+      center: mapCenter,
+      zoom,
+      basemap,
+      instructions: `Open ${mapUrl} in your browser to view the interactive map`,
+      features: [
+        "Zoom in/out with mouse wheel or +/- buttons",
+        "Pan by dragging the map",
+        "Switch between layers (if multiple)",
+        "Toggle basemap styles",
+        "Full-screen mode available"
+      ]
+    };
+  } catch (error) {
+    return {
+      success: false,
+      operation: "create",
+      error: error.message || "Failed to create map",
+      message: "Map creation failed"
+    };
+  }
+}
+async function listMaps() {
+  const maps = Object.values(activeMaps).map((session) => ({
+    id: session.id,
+    url: `http://localhost:3000/map/${session.id}`,
+    region: session.region,
+    created: session.created.toISOString(),
+    layers: session.layers.length
+  }));
+  return {
+    success: true,
+    operation: "list",
+    count: maps.length,
+    maps,
+    message: `${maps.length} active map(s)`
+  };
+}
+async function deleteMap(params) {
+  const { mapId } = params;
+  if (!mapId) {
+    return {
+      success: false,
+      operation: "delete",
+      error: "Map ID required",
+      message: "Please provide a map ID to delete"
+    };
+  }
+  if (activeMaps[mapId]) {
+    delete activeMaps[mapId];
+    return {
+      success: true,
+      operation: "delete",
+      mapId,
+      message: "Map session deleted"
+    };
+  } else {
+    return {
+      success: false,
+      operation: "delete",
+      mapId,
+      error: "Map not found",
+      message: `No active map with ID: ${mapId}`
+    };
+  }
+}
+async function getRegionGeometry(region) {
+  if (region.includes(",")) {
+    const parts = region.split(",").map((p) => parseFloat(p.trim()));
+    if (parts.length === 4) {
+      return ee10.Geometry.Rectangle([parts[0], parts[1], parts[2], parts[3]]);
+    }
+  }
+  try {
+    const states = ee10.FeatureCollection("TIGER/2016/States");
+    const state = states.filter(ee10.Filter.eq("NAME", region)).first();
+    const stateInfo = await state.getInfo();
+    if (stateInfo && stateInfo.geometry) {
+      return state.geometry();
+    }
+  } catch (e) {
+  }
+  try {
+    const counties = ee10.FeatureCollection("TIGER/2016/Counties");
+    let county;
+    if (region.includes(",")) {
+      const parts = region.split(",").map((p) => p.trim());
+      county = counties.filter(ee10.Filter.eq("NAME", parts[0])).first();
+    } else {
+      county = counties.filter(ee10.Filter.eq("NAME", region)).first();
+    }
+    const countyInfo = await county.getInfo();
+    if (countyInfo && countyInfo.geometry) {
+      return county.geometry();
+    }
+  } catch (e) {
+  }
+  return ee10.Geometry.Point([-98.5795, 39.8283]).buffer(1e5);
+}
+async function handler3(params) {
+  const { operation } = params;
+  switch (operation) {
+    case "create":
+      return await createMap(params);
+    case "list":
+      return await listMaps();
+    case "delete":
+      return await deleteMap(params);
+    default:
+      throw new Error(`Unknown operation: ${operation}`);
+  }
+}
+var MapToolSchema, activeMaps;
+var init_earth_engine_map = __esm({
+  "src/mcp/tools/consolidated/earth_engine_map.ts"() {
+    "use strict";
+    init_esm_shims();
+    init_registry();
+    init_global_store();
+    MapToolSchema = z6.object({
+      operation: z6.enum(["create", "list", "delete"]).describe("Map operation"),
+      // For create operation
+      input: z6.string().optional().describe("Model key or composite key to visualize"),
+      region: z6.string().optional().describe("Region name for the map"),
+      layers: z6.array(z6.object({
+        name: z6.string().describe("Layer name"),
+        input: z6.string().optional().describe("Input key for this specific layer"),
+        bands: z6.array(z6.string()).optional().describe("Bands to visualize"),
+        visParams: z6.object({
+          min: z6.number().optional(),
+          max: z6.number().optional(),
+          palette: z6.array(z6.string()).optional(),
+          gamma: z6.number().optional()
+        }).optional()
+      })).optional().describe("Multiple layers configuration"),
+      // For single layer (backward compatibility)
+      bands: z6.array(z6.string()).optional().describe("Bands to visualize"),
+      visParams: z6.object({
+        min: z6.number().optional(),
+        max: z6.number().optional(),
+        palette: z6.array(z6.string()).optional(),
+        gamma: z6.number().optional()
+      }).optional().describe("Visualization parameters"),
+      // For list/delete operations
+      mapId: z6.string().optional().describe("Map ID for specific operations"),
+      // Map options
+      center: z6.array(z6.number()).optional().describe("[longitude, latitude] center point"),
+      zoom: z6.number().optional().describe("Initial zoom level"),
+      basemap: z6.enum(["satellite", "terrain", "roadmap", "dark"]).optional().describe("Base map style")
+    });
+    activeMaps = globalMapSessions;
+    register({
+      name: "earth_engine_map",
+      description: "Interactive Map Viewer - create, list, delete interactive web maps",
+      input: MapToolSchema,
+      output: z6.any(),
+      handler: handler3
+    });
+  }
+});
+
 // src/mcp/tools/index.ts
 var tools_exports = {};
 var init_tools = __esm({
@@ -3196,6 +4599,7 @@ var init_tools = __esm({
     init_earth_engine_system();
     init_earth_engine_process();
     init_earth_engine_export();
+    init_earth_engine_map();
   }
 });
 

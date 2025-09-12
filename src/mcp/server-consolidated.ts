@@ -9,11 +9,12 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { list, get } from './registry';
 import { initEarthEngineWithSA } from '../gee/client';
 
-// Import ONLY the 4 consolidated super tools
+// Import the consolidated super tools
 import './tools/consolidated/earth_engine_data';
 import './tools/consolidated/earth_engine_process';
 import './tools/consolidated/earth_engine_export';
 import './tools/consolidated/earth_engine_system';
+import './tools/consolidated/earth_engine_map';
 
 /**
  * Build and configure the consolidated MCP server
@@ -89,7 +90,7 @@ export async function buildConsolidatedServer() {
   });
   
   console.error('[MCP] Consolidated server configured successfully');
-  console.error('[MCP] ✅ Reduced from 30 tools to 4 super tools');
+  console.error('[MCP] ✅ Reduced from 30 tools to 5 super tools');
   console.error('[MCP] ✅ This should prevent MCP client crashes');
   
   return server;
@@ -102,7 +103,7 @@ async function main() {
   try {
     console.error('[MCP] Starting Earth Engine MCP Consolidated Server...');
     console.error('[MCP] Version: 2.0.0 (Consolidated)');
-    console.error('[MCP] Tools: 4 super tools (data, process, export, system)');
+    console.error('[MCP] Tools: 5 super tools (data, process, export, system, map)');
     
     const server = await buildConsolidatedServer();
     const transport = new StdioServerTransport();

@@ -9,7 +9,7 @@ import { register } from '../../registry';
 import { parseAoi } from '@/src/utils/geo';
 import { Storage } from '@google-cloud/storage';
 import { optimizer } from '@/src/utils/ee-optimizer';
-import { compositeStore, compositeMetadata } from './earth_engine_process';
+import { getComposite, getMetadata, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '@/src/lib/global-store';
 import { generateTilesOptimized } from './tiles_handler';
 import { generateTilesFast } from './tiles_fast';
 import { generateTilesDirect } from './tiles_direct';
@@ -62,7 +62,7 @@ const ExportToolSchema = z.object({
  * Generate thumbnail for visualization
  */
 async function generateThumbnail(params: any) {
-  const { 
+  let { 
     input,
     compositeKey,
     ndviKey,
@@ -90,9 +90,14 @@ async function generateThumbnail(params: any) {
       max: 1,
       palette: ['blue', 'white', 'green']
     };
-  } else if (compositeKey && compositeStore[compositeKey]) {
+  } else if (compositeKey) {
     // Use stored composite result
+    console.log(`Looking for composite: ${compositeKey}`);
+    console.log(`Keys in store: ${getAllCompositeKeys().join(', ')}`);
     image = compositeStore[compositeKey];
+    if (!image) {
+      throw new Error(`Composite ${compositeKey} not found in store`);
+    }
     
     // Check if we have metadata about this composite
     metadata = compositeMetadata[compositeKey];
@@ -177,6 +182,8 @@ async function generateThumbnail(params: any) {
     // Use provided input - ensure it's a valid EE object
     if (typeof input === 'string') {
       // If input is a string, it might be a compositeKey, modelKey, or datasetId
+      console.log(`Looking for input: ${input}`);
+      console.log(`Keys in store: ${getAllCompositeKeys().join(', ')}`);
       if (compositeStore[input]) {
         image = compositeStore[input];
         // Also get metadata if this is a composite

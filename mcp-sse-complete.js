@@ -192,6 +192,63 @@ const TOOLS = [
       required: ['operation']
     }
   },
+  {
+    name: 'earth_engine_map',
+    description: 'Interactive Map Viewer - create, list, delete interactive web maps for large regions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        operation: {
+          type: 'string',
+          enum: ['create', 'list', 'delete'],
+          description: 'Map operation to perform'
+        },
+        input: { type: 'string', description: 'Model key or composite key to visualize' },
+        region: { type: 'string', description: 'Region name for the map' },
+        layers: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Layer name' },
+              input: { type: 'string', description: 'Input key for this specific layer' },
+              bands: { type: 'array', items: { type: 'string' }, description: 'Bands to visualize' },
+              visParams: {
+                type: 'object',
+                properties: {
+                  min: { type: 'number' },
+                  max: { type: 'number' },
+                  palette: { type: 'array', items: { type: 'string' } },
+                  gamma: { type: 'number' }
+                }
+              }
+            }
+          },
+          description: 'Multiple layers configuration'
+        },
+        bands: { type: 'array', items: { type: 'string' }, description: 'Bands to visualize' },
+        visParams: {
+          type: 'object',
+          properties: {
+            min: { type: 'number' },
+            max: { type: 'number' },
+            palette: { type: 'array', items: { type: 'string' } },
+            gamma: { type: 'number' }
+          },
+          description: 'Visualization parameters'
+        },
+        mapId: { type: 'string', description: 'Map ID for specific operations' },
+        center: { type: 'array', items: { type: 'number' }, description: '[longitude, latitude] center point' },
+        zoom: { type: 'number', description: 'Initial zoom level' },
+        basemap: {
+          type: 'string',
+          enum: ['satellite', 'terrain', 'roadmap', 'dark'],
+          description: 'Base map style'
+        }
+      },
+      required: ['operation']
+    }
+  },
 
   // ========== GEOSPATIAL MODELS ==========
   {
@@ -423,7 +480,8 @@ async function handleToolCall(message) {
     if (name === 'earth_engine_data' || 
         name === 'earth_engine_process' || 
         name === 'earth_engine_export' || 
-        name === 'earth_engine_system') {
+        name === 'earth_engine_system' ||
+        name === 'earth_engine_map') {
       // Direct consolidated tool call
       sseResult = await callSSE(name, args);
     } else if (name === 'wildfire_risk_assessment') {

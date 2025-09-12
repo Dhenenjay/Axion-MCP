@@ -8,13 +8,11 @@ import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
 import { parseAoi } from '@/src/utils/geo';
+import { addComposite, getComposite, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '@/src/lib/global-store';
 import { optimizer } from '@/src/utils/ee-optimizer';
 
-// Store for composite results
-export const compositeStore: { [key: string]: any } = {};
-
-// Store metadata about composites for proper visualization
-export const compositeMetadata: { [key: string]: any } = {};
+// Use the global stores directly from imports - DO NOT redefine them!
+// The compositeStore and compositeMetadata are imported from global-store above
 
 // Main schema for the consolidated tool
 const ProcessToolSchema = z.object({
@@ -98,12 +96,37 @@ const ProcessToolSchema = z.object({
  */
 async function getInput(input: any) {
   if (typeof input === 'string') {
+    // First check if it's a stored composite key
+    if (compositeStore[input]) {
+      // The stored composite might have lost its EE methods
+      // Ensure it's properly wrapped as an ee.Image
+      const stored = compositeStore[input];
+      
+      // If it has normalizedDifference method, it's already a proper EE image
+      if (stored && typeof stored.normalizedDifference === 'function') {
+        return stored;
+      }
+      
+      // Otherwise, try to reconstruct it
+      // This shouldn't happen if we're storing correctly, but as a fallback
+      try {
+        return ee.Image(stored);
+      } catch (e) {
+        console.error('Failed to reconstruct EE image from store:', e);
+        throw new Error(`Stored composite ${input} is not a valid Earth Engine image`);
+      }
+    }
+    
     // Try as collection first
     try {
       return new ee.ImageCollection(input);
     } catch {
       // Try as single image
-      return new ee.Image(input);
+      try {
+        return new ee.Image(input);
+      } catch {
+        throw new Error(`Could not resolve input: ${input}`);
+      }
     }
   }
   return input; // Already an EE object
@@ -189,16 +212,15 @@ async function createComposite(params: any) {
     
     // Store composite for later use
     const compositeKey = `composite_${Date.now()}`;
-    compositeStore[compositeKey] = composite;
     
-    // Store metadata for proper visualization later
-    compositeMetadata[compositeKey] = {
+    // Use the global store helper
+    addComposite(compositeKey, composite, {
       datasetId,
       compositeType,
       startDate,
       endDate,
       region
-    };
+    });
     
     return {
       success: true,
@@ -243,15 +265,14 @@ async function createComposite(params: any) {
     }
     
     const compositeKey = `composite_${Date.now()}`;
-    compositeStore[compositeKey] = composite;
     
-    // Store metadata for proper visualization later
-    compositeMetadata[compositeKey] = {
+    // Use the global store helper
+    addComposite(compositeKey, composite, {
       datasetId,
       compositeType,
       startDate,
       endDate
-    };
+    });
     
     return {
       success: true,
@@ -298,8 +319,8 @@ async function createFCC(params: any) {
     visualization: {
       bands: fccBands,
       min: 0,
-      max: datasetId.includes('COPERNICUS/S2') ? 0.3 : 3000,
-      gamma: 1.4
+      max: datasetId.includes('COPERNICUS/S2') ? 0.4 : 3000,  // Higher max for FCC with NIR
+      gamma: 1.3
     },
     nextSteps: 'Use thumbnail operation with the compositeKey and these visualization parameters'
   };
@@ -312,10 +333,19 @@ async function calculateIndex(params: any) {
   const { datasetId, startDate, endDate, region, input, compositeKey, indexType = 'NDVI' } = params;
   
   let source;
+  let metadata = null;
   
-  // Use existing composite if provided
-  if (compositeKey && compositeStore[compositeKey]) {
+  // Priority: input > compositeKey > datasetId
+  if (input) {
+    // Input can be a compositeKey string or other identifier
+    source = await getInput(input);
+    // If input was a composite key, get its metadata
+    if (typeof input === 'string' && compositeMetadata[input]) {
+      metadata = compositeMetadata[input];
+    }
+  } else if (compositeKey && compositeStore[compositeKey]) {
     source = compositeStore[compositeKey];
+    metadata = compositeMetadata[compositeKey];
   } else if (datasetId) {
     // Create a composite first
     const compositeResult = await createComposite({
@@ -326,15 +356,18 @@ async function calculateIndex(params: any) {
       compositeType: 'median'
     });
     source = compositeResult.result;
-  } else if (input) {
-    source = await getInput(input);
+    metadata = { datasetId };
   } else {
     throw new Error('datasetId, input, or compositeKey required for index calculation');
   }
   
   // Determine bands based on dataset type
   let bands: any = {};
-  if (datasetId?.includes('COPERNICUS/S2')) {
+  
+  // Check metadata first, then datasetId
+  const dataset = metadata?.datasetId || datasetId || '';
+  
+  if (dataset.includes('COPERNICUS/S2')) {
     bands = {
       red: 'B4',
       green: 'B3',
@@ -343,7 +376,7 @@ async function calculateIndex(params: any) {
       swir1: 'B11',
       swir2: 'B12'
     };
-  } else if (datasetId?.includes('LANDSAT')) {
+  } else if (dataset.includes('LANDSAT')) {
     bands = {
       red: 'SR_B4',
       green: 'SR_B3',
@@ -353,7 +386,7 @@ async function calculateIndex(params: any) {
       swir2: 'SR_B7'
     };
   } else {
-    // Default bands
+    // Default to Sentinel-2 bands (most common)
     bands = {
       red: 'B4',
       green: 'B3',

@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       'earth_engine_data',
       'earth_engine_process', 
       'earth_engine_export',
-      'earth_engine_system'
+      'earth_engine_system',
+      'earth_engine_map'
     ];
     
     // Model tools that use the core tools internally
