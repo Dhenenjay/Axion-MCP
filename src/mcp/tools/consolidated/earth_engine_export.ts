@@ -521,7 +521,180 @@ async function getTiles(params: any) {
 }
 
 /**
- * Check export task status
+ * Perform actual export to GCS or Drive
+ */
+async function performExport(params: any) {
+  const {
+    input,
+    compositeKey,
+    datasetId,
+    region,
+    startDate,
+    endDate,
+    destination = 'gcs',
+    bucket = 'earthengine-exports',
+    folder = 'My Drive',
+    fileNamePrefix = `export_${Date.now()}`,
+    format = 'GeoTIFF',
+    scale = 10,
+    maxPixels = 1e9
+  } = params;
+  
+  try {
+    let image;
+    let exportRegion;
+    
+    // Priority 1: Use stored composite
+    if (compositeKey && compositeStore[compositeKey]) {
+      image = compositeStore[compositeKey];
+      console.log(`Using stored composite: ${compositeKey}`);
+    } 
+    // Priority 2: Use provided input string as compositeKey
+    else if (input && typeof input === 'string' && compositeStore[input]) {
+      image = compositeStore[input];
+      console.log(`Using composite from input: ${input}`);
+    }
+    // Priority 3: Create new image from datasetId
+    else if (datasetId) {
+      console.log(`Creating new image from dataset: ${datasetId}`);
+      let collection = ee.ImageCollection(datasetId);
+      
+      if (startDate && endDate) {
+        collection = collection.filterDate(startDate, endDate);
+      }
+      
+      if (region) {
+        exportRegion = await parseAoi(region);
+        collection = collection.filterBounds(exportRegion);
+      }
+      
+      // Apply cloud filtering for optical data
+      if (datasetId.includes('COPERNICUS/S2')) {
+        collection = collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+          .map((img: any) => {
+            const qa = img.select('QA60');
+            const cloudBitMask = 1 << 10;
+            const cirrusBitMask = 1 << 11;
+            const mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+              .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+            return img.updateMask(mask).divide(10000)
+              .select(['B.*'])
+              .copyProperties(img, ['system:time_start']);
+          });
+      } else if (datasetId.includes('LANDSAT')) {
+        collection = collection.filter(ee.Filter.lt('CLOUD_COVER', 20));
+      }
+      
+      image = collection.median();
+    } else {
+      throw new Error('No valid image source provided (need compositeKey, input, or datasetId)');
+    }
+    
+    // Parse region for export if not already done
+    if (!exportRegion && region) {
+      exportRegion = await parseAoi(region);
+    }
+    
+    // Generate unique task description
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const taskDescription = `${fileNamePrefix}_${timestamp}`;
+    
+    // Create export task based on destination
+    let task;
+    if (destination === 'gcs' || destination === 'auto') {
+      // Export to Google Cloud Storage
+      const exportParams: any = {
+        image: image,
+        description: taskDescription,
+        bucket: bucket,
+        fileNamePrefix: fileNamePrefix,
+        scale: scale,
+        maxPixels: maxPixels,
+        fileFormat: format,
+        crs: 'EPSG:4326'
+      };
+      
+      // Handle region - if it exists, clip the image but don't set region in params
+      // This avoids the computed geometry serialization issue
+      if (exportRegion) {
+        // Clip the image to the region instead of passing region to export
+        exportParams.image = image.clip(exportRegion);
+      } else {
+        exportParams.image = image;
+      }
+      
+      task = ee.batch.Export.image.toCloudStorage(exportParams);
+    } else if (destination === 'drive') {
+      // Export to Google Drive
+      const exportParams: any = {
+        image: image,
+        description: taskDescription,
+        folder: folder,
+        fileNamePrefix: fileNamePrefix,
+        scale: scale,
+        maxPixels: maxPixels,
+        fileFormat: format,
+        crs: 'EPSG:4326'
+      };
+      
+      // Handle region - if it exists, clip the image but don't set region in params
+      // This avoids the computed geometry serialization issue
+      if (exportRegion) {
+        // Clip the image to the region instead of passing region to export
+        exportParams.image = image.clip(exportRegion);
+      } else {
+        exportParams.image = image;
+      }
+      
+      task = ee.batch.Export.image.toDrive(exportParams);
+    } else {
+      throw new Error(`Unsupported destination: ${destination}`);
+    }
+    
+    // Start the export task
+    task.start();
+    
+    // Get task ID
+    const taskId = task.id;
+    
+    return {
+      success: true,
+      operation: 'export',
+      taskId: taskId,
+      status: 'STARTED',
+      message: `Export task started successfully`,
+      details: {
+        description: taskDescription,
+        destination: destination,
+        bucket: destination === 'gcs' ? bucket : undefined,
+        folder: destination === 'drive' ? folder : undefined,
+        fileNamePrefix: fileNamePrefix,
+        format: format,
+        scale: scale,
+        maxPixels: maxPixels,
+        region: region || 'full extent'
+      },
+      instructions: {
+        checkStatus: `Use operation: 'status' with taskId: '${taskId}' to check progress`,
+        accessFile: destination === 'gcs' 
+          ? `File will be available at: gs://${bucket}/${fileNamePrefix}*`
+          : `File will be available in Google Drive folder: ${folder}/${fileNamePrefix}*`
+      }
+    };
+  } catch (error: any) {
+    console.error('Export error:', error);
+    return {
+      success: false,
+      operation: 'export',
+      error: error.message || 'Export failed',
+      message: 'Failed to start export task',
+      params: params
+    };
+  }
+}
+
+/**
+ * Check export status
  */
 async function checkStatus(params: any) {
   const { taskId } = params;
@@ -587,13 +760,7 @@ async function handler(params: any) {
       return await checkStatus(params);
       
     case 'export':
-      // Export implementation would go here
-      return {
-        success: true,
-        operation: 'export',
-        message: 'Export functionality pending implementation',
-        params
-      };
+      return await performExport(params);
       
     case 'download':
       return {
