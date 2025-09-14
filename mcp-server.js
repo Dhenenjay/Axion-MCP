@@ -1,4 +1,18 @@
 #!/usr/bin/env node
+/**
+ * MCP Server Wrapper for Claude Desktop
+ * This wrapper ensures the server starts properly with stdio transport
+ */
+
+// Direct invocation of the main function
+process.env.GOOGLE_APPLICATION_CREDENTIALS = process.env.GOOGLE_APPLICATION_CREDENTIALS || 'C:\\Users\\Dhenenjay\\Downloads\\ee-key.json';
+
+// Force the main function to run
+process.argv[1] = import.meta.url.replace('file:///', '');
+
+import('./dist/index.mjs').then(() => {
+  console.error('MCP Server module loaded');
+});
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');

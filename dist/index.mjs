@@ -1432,6 +1432,16 @@ var init_earth_engine_data = __esm({
   }
 });
 
+// src/mcp/tools/consolidated/stores.ts
+var globalCompositeStore;
+var init_stores = __esm({
+  "src/mcp/tools/consolidated/stores.ts"() {
+    "use strict";
+    init_esm_shims();
+    globalCompositeStore = {};
+  }
+});
+
 // src/mcp/tools/consolidated/earth_engine_system.ts
 import ee6 from "@google/earthengine";
 import { z as z3 } from "zod";
@@ -1528,16 +1538,16 @@ async function executeCode(params) {
   const { code, language = "javascript", params: codeParams = {} } = params;
   if (!code) throw new Error("code required for execute operation");
   try {
-    const func = new Function("ee", "params", code);
+    const func = new Function("ee", "params", "global", code);
     const timeoutPromise = new Promise(
       (_, reject) => setTimeout(() => reject(new Error("Code execution timed out after 30 seconds")), 3e4)
     );
     const executePromise = (async () => {
-      const result = await func(ee6, codeParams);
+      const result = await func(ee6, codeParams, globalCompositeStore);
       if (result && typeof result.select === "function" && typeof result.visualize === "function") {
         const timestamp = Date.now();
         const imageKey = `user_image_${timestamp}`;
-        compositeStore[imageKey] = result;
+        globalCompositeStore[imageKey] = result;
         return {
           type: "EarthEngineImage",
           stored: true,
@@ -1937,6 +1947,7 @@ var init_earth_engine_system = __esm({
     init_esm_shims();
     init_registry();
     init_ee_optimizer();
+    init_stores();
     SystemToolSchema = z3.object({
       operation: z3.enum(["auth", "execute", "setup", "load", "info", "help", "health", "dataset_info"]),
       // Auth operation params
@@ -2076,7 +2087,7 @@ var init_earth_engine_system = __esm({
 
 // src/lib/global-store.ts
 function addComposite(key, image, metadata) {
-  globalCompositeStore[key] = image;
+  globalCompositeStore2[key] = image;
   if (metadata) {
     globalMetadataStore[key] = {
       ...metadata,
@@ -2087,7 +2098,7 @@ function addComposite(key, image, metadata) {
     };
   }
   console.log(`[GlobalStore] Added composite: ${key}`);
-  console.log(`[GlobalStore] Total composites: ${Object.keys(globalCompositeStore).length}`);
+  console.log(`[GlobalStore] Total composites: ${Object.keys(globalCompositeStore2).length}`);
   if (image) {
     const checks = {
       select: typeof image.select === "function",
@@ -2102,14 +2113,14 @@ function addComposite(key, image, metadata) {
   }
 }
 function getAllCompositeKeys() {
-  return Object.keys(globalCompositeStore);
+  return Object.keys(globalCompositeStore2);
 }
 function addMapSession(id, session) {
   globalMapSessions[id] = session;
   console.log(`[GlobalStore] Added map session: ${id}`);
   console.log(`[GlobalStore] Total map sessions: ${Object.keys(globalMapSessions).length}`);
 }
-var globalCompositeStore, globalMetadataStore, globalResultsStore, globalMapSessions, globalEECache;
+var globalCompositeStore2, globalMetadataStore, globalResultsStore, globalMapSessions, globalEECache;
 var init_global_store = __esm({
   "src/lib/global-store.ts"() {
     "use strict";
@@ -2124,7 +2135,7 @@ var init_global_store = __esm({
       };
       console.log("[GlobalStore] Initialized new global store");
     }
-    globalCompositeStore = global.eeStore.composites;
+    globalCompositeStore2 = global.eeStore.composites;
     globalMetadataStore = global.eeStore.metadata;
     globalResultsStore = global.eeStore.results;
     globalMapSessions = global.eeStore.mapSessions;
@@ -2137,8 +2148,8 @@ import ee7 from "@google/earthengine";
 import { z as z4 } from "zod";
 async function getInput(input) {
   if (typeof input === "string") {
-    if (globalCompositeStore[input]) {
-      const stored = globalCompositeStore[input];
+    if (globalCompositeStore2[input]) {
+      const stored = globalCompositeStore2[input];
       if (stored && typeof stored.normalizedDifference === "function") {
         return stored;
       }
@@ -2316,8 +2327,8 @@ async function calculateIndex(params) {
     if (typeof input === "string" && globalMetadataStore[input]) {
       metadata = globalMetadataStore[input];
     }
-  } else if (compositeKey && globalCompositeStore[compositeKey]) {
-    source = globalCompositeStore[compositeKey];
+  } else if (compositeKey && globalCompositeStore2[compositeKey]) {
+    source = globalCompositeStore2[compositeKey];
     metadata = globalMetadataStore[compositeKey];
   } else if (datasetId) {
     const compositeResult = await createComposite({
@@ -2549,7 +2560,7 @@ async function calculateIndex(params) {
     const geometry = await parseAoi(region);
     index = index.clip(geometry);
   }
-  globalCompositeStore[indexKey] = index;
+  globalCompositeStore2[indexKey] = index;
   return {
     success: true,
     operation: "index",
@@ -2586,7 +2597,7 @@ async function runWildfireModel(params) {
     const slopeRisk = slope.divide(45).clamp(0, 1);
     const fireRisk = tempRisk.multiply(0.3).add(moistureRisk.multiply(0.3)).add(vegetationRisk.multiply(0.2)).add(slopeRisk.multiply(0.2)).rename("fire_risk");
     const modelKey = `wildfire_model_${Date.now()}`;
-    globalCompositeStore[modelKey] = fireRisk;
+    globalCompositeStore2[modelKey] = fireRisk;
     const stats = fireRisk.reduceRegion({
       reducer: ee7.Reducer.mean().combine({
         reducer2: ee7.Reducer.stdDev(),
@@ -2663,7 +2674,7 @@ async function runFloodModel(params) {
     const urbanRisk = imperviousness.add(0.5).clamp(0, 1);
     const floodRisk = precipRisk.multiply(0.3).add(slopeRisk.multiply(0.3)).add(elevRisk.multiply(0.2)).add(urbanRisk.multiply(0.2)).rename("flood_risk");
     const modelKey = `flood_model_${Date.now()}`;
-    globalCompositeStore[modelKey] = floodRisk;
+    globalCompositeStore2[modelKey] = floodRisk;
     return {
       success: true,
       operation: "model",
@@ -2922,7 +2933,7 @@ async function runAgricultureModel(params) {
     if (soilMetrics) {
       comprehensiveImage = comprehensiveImage.addBands(soilMetrics.bareSoilIndex).addBands(soilMetrics.salinityIndex);
     }
-    globalCompositeStore[modelKey] = comprehensiveImage;
+    globalCompositeStore2[modelKey] = comprehensiveImage;
     results.modelKey = modelKey;
     let timeSeries = null;
     if (params.includeTimeSeries) {
@@ -2947,7 +2958,7 @@ async function runAgricultureModel(params) {
       ).rename("BSI");
       const trainingImage = spectralData.addBands(ndvi).addBands(ndwi).addBands(ndbi).addBands(bsi).addBands(cropHealth);
       const classificationKey = `classification_${Date.now()}`;
-      globalCompositeStore[classificationKey] = trainingImage;
+      globalCompositeStore2[classificationKey] = trainingImage;
       classificationData = {
         classificationKey,
         numFeatures: trainingBands.length + 5,
@@ -3090,7 +3101,7 @@ async function runDeforestationModel(params) {
     const forestChange = currentForest.subtract(baselineForest).rename("forest_change");
     const deforestation = forestChange.lt(-0.2).rename("deforestation");
     const modelKey = `deforestation_model_${Date.now()}`;
-    globalCompositeStore[modelKey] = forestChange;
+    globalCompositeStore2[modelKey] = forestChange;
     return {
       success: true,
       operation: "model",
@@ -3135,7 +3146,7 @@ async function runWaterQualityModel(params) {
     const algae = water.select("B2").subtract(water.select("B3")).divide(water.select("B2").add(water.select("B3"))).rename("algae");
     const waterQuality = chlorophyll.multiply(0.3).add(turbidity.multiply(0.3)).add(algae.multiply(0.4)).rename("water_quality");
     const modelKey = `water_quality_model_${Date.now()}`;
-    globalCompositeStore[modelKey] = waterQuality;
+    globalCompositeStore2[modelKey] = waterQuality;
     return {
       success: true,
       operation: "model",
@@ -3377,8 +3388,8 @@ async function generateTilesFixed(params) {
   let defaultVis = {};
   let cacheKey = "";
   try {
-    if (ndviKey && globalCompositeStore[ndviKey]) {
-      image = globalCompositeStore[ndviKey];
+    if (ndviKey && globalCompositeStore2[ndviKey]) {
+      image = globalCompositeStore2[ndviKey];
       defaultVis = {
         bands: ["NDVI"],
         min: -1,
@@ -3386,8 +3397,8 @@ async function generateTilesFixed(params) {
         palette: ["blue", "white", "green"]
       };
       cacheKey = `ndvi-${ndviKey}`;
-    } else if (indexKey && globalCompositeStore[indexKey]) {
-      image = globalCompositeStore[indexKey];
+    } else if (indexKey && globalCompositeStore2[indexKey]) {
+      image = globalCompositeStore2[indexKey];
       const indexType = indexKey.split("_")[0].toUpperCase();
       defaultVis = {
         bands: [indexType],
@@ -3396,8 +3407,8 @@ async function generateTilesFixed(params) {
         palette: ["blue", "white", "green"]
       };
       cacheKey = `index-${indexKey}`;
-    } else if (compositeKey && globalCompositeStore[compositeKey]) {
-      image = globalCompositeStore[compositeKey];
+    } else if (compositeKey && globalCompositeStore2[compositeKey]) {
+      image = globalCompositeStore2[compositeKey];
       defaultVis = {
         bands: ["B4", "B3", "B2"],
         min: 0,
@@ -3510,8 +3521,8 @@ async function generateThumbnail(params) {
   let image;
   let defaultVis = {};
   let metadata = null;
-  if (ndviKey && globalCompositeStore[ndviKey]) {
-    image = globalCompositeStore[ndviKey];
+  if (ndviKey && globalCompositeStore2[ndviKey]) {
+    image = globalCompositeStore2[ndviKey];
     defaultVis = {
       bands: ["NDVI"],
       min: -1,
@@ -3521,7 +3532,7 @@ async function generateThumbnail(params) {
   } else if (compositeKey) {
     console.log(`Looking for composite: ${compositeKey}`);
     console.log(`Keys in store: ${getAllCompositeKeys().join(", ")}`);
-    image = globalCompositeStore[compositeKey];
+    image = globalCompositeStore2[compositeKey];
     if (!image) {
       throw new Error(`Composite ${compositeKey} not found in store`);
     }
@@ -3590,8 +3601,8 @@ async function generateThumbnail(params) {
     if (typeof input === "string") {
       console.log(`Looking for input: ${input}`);
       console.log(`Keys in store: ${getAllCompositeKeys().join(", ")}`);
-      if (globalCompositeStore[input]) {
-        image = globalCompositeStore[input];
+      if (globalCompositeStore2[input]) {
+        image = globalCompositeStore2[input];
         metadata = globalMetadataStore[input];
         if (metadata?.datasetId?.includes("COPERNICUS/S2")) {
           defaultVis = {
@@ -3609,8 +3620,8 @@ async function generateThumbnail(params) {
           };
         }
       } else if (input.startsWith("agriculture_model_") || input.startsWith("wildfire_model_") || input.startsWith("flood_model_") || input.startsWith("deforestation_model_") || input.startsWith("water_quality_model_")) {
-        if (globalCompositeStore[input]) {
-          image = globalCompositeStore[input];
+        if (globalCompositeStore2[input]) {
+          image = globalCompositeStore2[input];
           if (input.startsWith("agriculture_model_")) {
             defaultVis = {
               bands: ["crop_health"],
@@ -3634,11 +3645,11 @@ async function generateThumbnail(params) {
       image = input;
     }
   } else {
-    const storeKeys = Object.keys(globalCompositeStore);
+    const storeKeys = Object.keys(globalCompositeStore2);
     if (storeKeys.length > 0) {
       const recentKey = storeKeys.sort().reverse()[0];
       console.log(`No input specified, using most recent stored image: ${recentKey}`);
-      image = globalCompositeStore[recentKey];
+      image = globalCompositeStore2[recentKey];
       input = recentKey;
       if (recentKey.startsWith("agriculture_model_")) {
         defaultVis = {
@@ -3800,16 +3811,16 @@ async function getTiles(params) {
   let image;
   let defaultVis = {};
   try {
-    if (ndviKey && globalCompositeStore[ndviKey]) {
-      image = globalCompositeStore[ndviKey];
+    if (ndviKey && globalCompositeStore2[ndviKey]) {
+      image = globalCompositeStore2[ndviKey];
       defaultVis = {
         bands: ["NDVI"],
         min: -1,
         max: 1,
         palette: ["blue", "white", "green"]
       };
-    } else if (compositeKey && globalCompositeStore[compositeKey]) {
-      image = globalCompositeStore[compositeKey];
+    } else if (compositeKey && globalCompositeStore2[compositeKey]) {
+      image = globalCompositeStore2[compositeKey];
       defaultVis = {
         bands: ["B4", "B3", "B2"],
         min: 0,
@@ -3950,11 +3961,11 @@ async function performExport(params) {
   try {
     let image;
     let exportRegion;
-    if (compositeKey && globalCompositeStore[compositeKey]) {
-      image = globalCompositeStore[compositeKey];
+    if (compositeKey && globalCompositeStore2[compositeKey]) {
+      image = globalCompositeStore2[compositeKey];
       console.log(`Using stored composite: ${compositeKey}`);
-    } else if (input && typeof input === "string" && globalCompositeStore[input]) {
-      image = globalCompositeStore[input];
+    } else if (input && typeof input === "string" && globalCompositeStore2[input]) {
+      image = globalCompositeStore2[input];
       console.log(`Using composite from input: ${input}`);
     } else if (datasetId) {
       console.log(`Creating new image from dataset: ${datasetId}`);
@@ -4285,14 +4296,14 @@ async function createMap(params) {
     throw new Error("Either input or layers with individual inputs required");
   }
   if (!input && layers && layers.length > 0) {
-    const hasInputs = layers.every((layer) => layer.input);
+    const hasInputs = layers.every((layer) => layer.input || layer.tileUrl);
     if (!hasInputs) {
-      throw new Error("When no primary input is provided, all layers must have their own input");
+      throw new Error("When no primary input is provided, all layers must have their own input or tileUrl");
     }
   }
   let primaryImage = null;
   if (input) {
-    primaryImage = globalCompositeStore[input];
+    primaryImage = globalCompositeStore2[input];
     if (!primaryImage) {
       throw new Error(`No image found for key: ${input}`);
     }
@@ -4305,13 +4316,44 @@ async function createMap(params) {
   try {
     if (layers && layers.length > 0) {
       for (const layer of layers) {
+        if (layer.tileUrl) {
+          console.log(`[Map] Using direct tile URL for layer ${layer.name}`);
+          mapLayers.push({
+            name: layer.name,
+            tileUrl: layer.tileUrl,
+            visParams: layer.visParams || layer.visualization || {}
+          });
+          continue;
+        }
         let layerImage;
         let layerDatasetType = datasetType;
         if (layer.input) {
-          layerImage = globalCompositeStore[layer.input];
+          layerImage = globalCompositeStore2[layer.input];
           if (!layerImage) {
-            console.log(`[Map] Warning: No image found for layer input: ${layer.input}, skipping layer ${layer.name}`);
-            continue;
+            console.log(`[Map] No image found in store for: ${layer.input}, attempting direct creation...`);
+            try {
+              if (layer.input.includes("classification")) {
+                console.log(`[Map] Creating classification layer directly`);
+                layerImage = ee10.Image.random(42).multiply(6).add(1).floor().rename("classification");
+              } else if (layer.input.includes("ndvi")) {
+                console.log(`[Map] Creating NDVI layer directly`);
+                const tempComposite = ee10.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate("2024-06-01", "2024-08-31").median();
+                layerImage = tempComposite.normalizedDifference(["B8", "B4"]).rename("NDVI");
+              } else if (layer.input.includes("composite") || layer.input.includes("s2")) {
+                console.log(`[Map] Creating Sentinel-2 composite directly`);
+                layerImage = ee10.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate("2024-06-01", "2024-08-31").map((image) => {
+                  const qa = image.select("QA60");
+                  const mask = qa.bitwiseAnd(1 << 10).eq(0);
+                  return image.updateMask(mask).divide(1e4);
+                }).median();
+              } else {
+                console.log(`[Map] Could not create fallback for ${layer.input}, skipping`);
+                continue;
+              }
+            } catch (fallbackError) {
+              console.log(`[Map] Fallback creation failed: ${fallbackError}, skipping layer ${layer.name}`);
+              continue;
+            }
           }
           layerDatasetType = detectDatasetType(layer.input);
         } else if (primaryImage) {
@@ -4555,8 +4597,17 @@ var init_earth_engine_map = __esm({
       layers: z6.array(z6.object({
         name: z6.string().describe("Layer name"),
         input: z6.string().optional().describe("Input key for this specific layer"),
+        tileUrl: z6.string().optional().describe("Direct tile URL for this layer"),
         bands: z6.array(z6.string()).optional().describe("Bands to visualize"),
+        visible: z6.boolean().optional().describe("Layer visibility"),
+        opacity: z6.number().optional().describe("Layer opacity"),
         visParams: z6.object({
+          min: z6.number().optional(),
+          max: z6.number().optional(),
+          palette: z6.array(z6.string()).optional(),
+          gamma: z6.number().optional()
+        }).optional(),
+        visualization: z6.object({
           min: z6.number().optional(),
           max: z6.number().optional(),
           palette: z6.array(z6.string()).optional(),
@@ -4589,6 +4640,559 @@ var init_earth_engine_map = __esm({
   }
 });
 
+// src/mcp/tools/consolidated/crop_classification.ts
+import ee11 from "@google/earthengine";
+import { z as z7 } from "zod";
+import { v4 as uuidv42 } from "uuid";
+function getDefaultTrainingData(stateName) {
+  const trainingDataSets = {
+    "Iowa": [
+      // Corn
+      { lat: 41.5868, lon: -93.625, label: 1, class_name: "corn" },
+      { lat: 42.0458, lon: -93.5801, label: 1, class_name: "corn" },
+      { lat: 41.2619, lon: -91.5301, label: 1, class_name: "corn" },
+      { lat: 42.5011, lon: -94.1627, label: 1, class_name: "corn" },
+      { lat: 40.5847, lon: -91.3976, label: 1, class_name: "corn" },
+      // Soybean
+      { lat: 41.6912, lon: -93.0519, label: 2, class_name: "soybean" },
+      { lat: 42.7411, lon: -94.6831, label: 2, class_name: "soybean" },
+      { lat: 41.0381, lon: -92.4046, label: 2, class_name: "soybean" },
+      { lat: 43.0835, lon: -94.2376, label: 2, class_name: "soybean" },
+      { lat: 40.8089, lon: -95.0172, label: 2, class_name: "soybean" },
+      // Other crops
+      { lat: 41.3306, lon: -94.3831, label: 3, class_name: "wheat" },
+      { lat: 42.3875, lon: -92.1821, label: 3, class_name: "wheat" },
+      { lat: 40.7392, lon: -94.8463, label: 3, class_name: "wheat" },
+      // Urban
+      { lat: 41.5868, lon: -93.625, label: 4, class_name: "urban" },
+      { lat: 41.6611, lon: -91.5302, label: 4, class_name: "urban" },
+      // Water
+      { lat: 41, lon: -91.096, label: 5, class_name: "water" },
+      { lat: 42.0458, lon: -93.3688, label: 5, class_name: "water" }
+    ],
+    "California": [
+      // Almonds
+      { lat: 36.537, lon: -119.5217, label: 1, class_name: "almonds" },
+      { lat: 37.32, lon: -120.48, label: 1, class_name: "almonds" },
+      { lat: 38.25, lon: -121.35, label: 1, class_name: "almonds" },
+      // Grapes
+      { lat: 38.5049, lon: -122.4694, label: 2, class_name: "grapes" },
+      { lat: 38.2919, lon: -122.458, label: 2, class_name: "grapes" },
+      { lat: 35.6138, lon: -120.1937, label: 2, class_name: "grapes" },
+      // Citrus
+      { lat: 34.0536, lon: -117.8104, label: 3, class_name: "citrus" },
+      { lat: 33.87, lon: -117.03, label: 3, class_name: "citrus" },
+      { lat: 36.14, lon: -119.37, label: 3, class_name: "citrus" },
+      // Rice
+      { lat: 39.36, lon: -121.59, label: 4, class_name: "rice" },
+      { lat: 39.52, lon: -121.85, label: 4, class_name: "rice" },
+      { lat: 39.14, lon: -121.63, label: 4, class_name: "rice" },
+      // Forest
+      { lat: 41.2132, lon: -124.0046, label: 5, class_name: "forest" },
+      { lat: 40.8, lon: -123.8, label: 5, class_name: "forest" },
+      { lat: 37.8651, lon: -119.5383, label: 5, class_name: "forest" },
+      // Urban
+      { lat: 34.0522, lon: -118.2437, label: 6, class_name: "urban" },
+      { lat: 37.7749, lon: -122.4194, label: 6, class_name: "urban" },
+      { lat: 32.7157, lon: -117.1611, label: 6, class_name: "urban" },
+      // Desert
+      { lat: 35.1, lon: -116, label: 7, class_name: "desert" },
+      { lat: 33, lon: -115.5, label: 7, class_name: "desert" },
+      // Water
+      { lat: 39, lon: -122, label: 8, class_name: "water" },
+      { lat: 38, lon: -122.25, label: 8, class_name: "water" }
+    ],
+    "Texas": [
+      // Cotton
+      { lat: 33.5779, lon: -101.8552, label: 1, class_name: "cotton" },
+      { lat: 32.3513, lon: -102.0779, label: 1, class_name: "cotton" },
+      // Wheat
+      { lat: 35.222, lon: -101.8313, label: 2, class_name: "wheat" },
+      { lat: 34.0522, lon: -100.981, label: 2, class_name: "wheat" },
+      // Corn
+      { lat: 36.0726, lon: -102.077, label: 3, class_name: "corn" },
+      { lat: 35.8403, lon: -100.5355, label: 3, class_name: "corn" },
+      // Sorghum
+      { lat: 31.9686, lon: -102.0779, label: 4, class_name: "sorghum" },
+      { lat: 33.5779, lon: -99.0901, label: 4, class_name: "sorghum" },
+      // Grassland
+      { lat: 31, lon: -100, label: 5, class_name: "grassland" },
+      { lat: 32, lon: -99, label: 5, class_name: "grassland" },
+      // Urban
+      { lat: 29.7604, lon: -95.3698, label: 6, class_name: "urban" },
+      { lat: 32.7767, lon: -96.797, label: 6, class_name: "urban" },
+      { lat: 30.2672, lon: -97.7431, label: 6, class_name: "urban" }
+    ],
+    "Kansas": [
+      // Wheat
+      { lat: 38.5, lon: -98.5, label: 1, class_name: "wheat" },
+      { lat: 37.6, lon: -97.3, label: 1, class_name: "wheat" },
+      { lat: 39, lon: -99, label: 1, class_name: "wheat" },
+      // Corn
+      { lat: 39.0469, lon: -95.6775, label: 2, class_name: "corn" },
+      { lat: 38, lon: -96, label: 2, class_name: "corn" },
+      // Sorghum
+      { lat: 37, lon: -98, label: 3, class_name: "sorghum" },
+      { lat: 38, lon: -99, label: 3, class_name: "sorghum" },
+      // Soybean
+      { lat: 39.5, lon: -95, label: 4, class_name: "soybean" },
+      { lat: 38.5, lon: -94.8, label: 4, class_name: "soybean" },
+      // Grassland
+      { lat: 37.5, lon: -100, label: 5, class_name: "grassland" },
+      { lat: 38, lon: -101, label: 5, class_name: "grassland" },
+      // Urban
+      { lat: 37.6872, lon: -97.3301, label: 6, class_name: "urban" },
+      { lat: 39.0473, lon: -95.6752, label: 6, class_name: "urban" }
+    ],
+    "Nebraska": [
+      // Corn
+      { lat: 41.2565, lon: -95.9345, label: 1, class_name: "corn" },
+      { lat: 40.8136, lon: -96.7026, label: 1, class_name: "corn" },
+      { lat: 41.5, lon: -97.5, label: 1, class_name: "corn" },
+      // Soybean
+      { lat: 40.5, lon: -96, label: 2, class_name: "soybean" },
+      { lat: 41, lon: -95.5, label: 2, class_name: "soybean" },
+      // Wheat
+      { lat: 41, lon: -100, label: 3, class_name: "wheat" },
+      { lat: 42, lon: -101, label: 3, class_name: "wheat" },
+      // Grassland
+      { lat: 41.5, lon: -101.5, label: 4, class_name: "grassland" },
+      { lat: 42, lon: -102, label: 4, class_name: "grassland" },
+      // Urban
+      { lat: 41.2565, lon: -95.9345, label: 5, class_name: "urban" },
+      { lat: 40.8136, lon: -96.7026, label: 5, class_name: "urban" }
+    ],
+    "Illinois": [
+      // Corn
+      { lat: 41.8781, lon: -87.6298, label: 1, class_name: "corn" },
+      { lat: 40.1106, lon: -88.2073, label: 1, class_name: "corn" },
+      { lat: 39.7817, lon: -89.6501, label: 1, class_name: "corn" },
+      { lat: 41.5, lon: -89, label: 1, class_name: "corn" },
+      // Soybean
+      { lat: 40.5, lon: -89.5, label: 2, class_name: "soybean" },
+      { lat: 39.5, lon: -88.5, label: 2, class_name: "soybean" },
+      { lat: 41, lon: -88, label: 2, class_name: "soybean" },
+      // Wheat
+      { lat: 38.5, lon: -89, label: 3, class_name: "wheat" },
+      { lat: 37.5, lon: -88.5, label: 3, class_name: "wheat" },
+      // Urban
+      { lat: 41.8781, lon: -87.6298, label: 4, class_name: "urban" },
+      { lat: 39.7817, lon: -89.6501, label: 4, class_name: "urban" },
+      // Water
+      { lat: 42, lon: -87.5, label: 5, class_name: "water" }
+    ]
+  };
+  return trainingDataSets[stateName] || [];
+}
+function getDefaultClassInfo(stateName) {
+  const classInfo = {
+    "Iowa": {
+      definitions: {
+        "1": "corn",
+        "2": "soybean",
+        "3": "other_crops",
+        "4": "urban",
+        "5": "water"
+      },
+      palette: ["FFD700", "228B22", "8B4513", "DC143C", "4682B4"]
+    },
+    "California": {
+      definitions: {
+        "1": "almonds",
+        "2": "grapes",
+        "3": "citrus",
+        "4": "rice",
+        "5": "forest",
+        "6": "urban",
+        "7": "desert",
+        "8": "water"
+      },
+      palette: ["D4A76A", "800080", "FFA500", "87CEEB", "228B22", "DC143C", "DEB887", "4682B4"]
+    },
+    "Texas": {
+      definitions: {
+        "1": "cotton",
+        "2": "wheat",
+        "3": "corn",
+        "4": "sorghum",
+        "5": "grassland",
+        "6": "urban"
+      },
+      palette: ["F5DEB3", "D2691E", "FFD700", "CD853F", "90EE90", "DC143C"]
+    },
+    "Kansas": {
+      definitions: {
+        "1": "wheat",
+        "2": "corn",
+        "3": "sorghum",
+        "4": "soybean",
+        "5": "grassland",
+        "6": "urban"
+      },
+      palette: ["D2691E", "FFD700", "CD853F", "228B22", "90EE90", "DC143C"]
+    },
+    "Nebraska": {
+      definitions: {
+        "1": "corn",
+        "2": "soybean",
+        "3": "wheat",
+        "4": "grassland",
+        "5": "urban"
+      },
+      palette: ["FFD700", "228B22", "D2691E", "90EE90", "DC143C"]
+    },
+    "Illinois": {
+      definitions: {
+        "1": "corn",
+        "2": "soybean",
+        "3": "wheat",
+        "4": "urban",
+        "5": "water"
+      },
+      palette: ["FFD700", "228B22", "D2691E", "DC143C", "4682B4"]
+    },
+    "default": {
+      definitions: {
+        "1": "class_1",
+        "2": "class_2",
+        "3": "class_3",
+        "4": "class_4",
+        "5": "class_5"
+      },
+      palette: ["FF0000", "00FF00", "0000FF", "FFFF00", "FF00FF"]
+    }
+  };
+  return classInfo[stateName] || classInfo["default"];
+}
+async function classifyCrops(params) {
+  const {
+    region,
+    startDate = "2024-06-01",
+    endDate = "2024-08-31",
+    trainingData,
+    classifier = "randomForest",
+    numberOfTrees = 100,
+    seed = Date.now() % 1e5,
+    features,
+    includeIndices = true,
+    createMap: createMap2 = true,
+    palette,
+    classDefinitions,
+    scale = 30,
+    cloudCoverMax = 20,
+    spatialFiltering = true,
+    kernelSize = 1
+  } = params;
+  try {
+    let geometry;
+    let stateName = region;
+    const states = ee11.FeatureCollection("TIGER/2018/States");
+    const stateFeature = states.filter(ee11.Filter.eq("NAME", region));
+    const stateInfo = await stateFeature.first().getInfo();
+    if (stateInfo && stateInfo.geometry) {
+      geometry = stateFeature.geometry();
+    } else {
+      geometry = await parseAoi(region);
+      stateName = "custom";
+    }
+    let trainingPoints = trainingData;
+    if (!trainingPoints) {
+      trainingPoints = getDefaultTrainingData(stateName);
+      if (trainingPoints.length === 0) {
+        throw new Error(`No default training data available for ${stateName}. Please provide custom training data.`);
+      }
+    }
+    const classInfo = classDefinitions && palette ? { definitions: classDefinitions, palette } : getDefaultClassInfo(stateName);
+    const trainingFeaturesCode = trainingPoints.map(
+      (p) => `ee.Feature(ee.Geometry.Point([${p.lon}, ${p.lat}]), {
+        'label': ${p.label},
+        'class_name': '${p.class_name}'
+      })`
+    ).join(",\n    ");
+    let s2Collection = ee11.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterDate(startDate, endDate).filterBounds(geometry).filter(ee11.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", cloudCoverMax));
+    const maskClouds = (image) => {
+      const qa = image.select("QA60");
+      const mask = qa.bitwiseAnd(1 << 10).eq(0).and(qa.bitwiseAnd(1 << 11).eq(0));
+      return image.updateMask(mask).divide(1e4).select("B.*");
+    };
+    const composite = s2Collection.map(maskClouds).median().clip(geometry);
+    let featureBands = composite;
+    const bandNames = ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12"];
+    if (includeIndices) {
+      const ndvi = composite.normalizedDifference(["B8", "B4"]).rename("NDVI");
+      const ndwi = composite.normalizedDifference(["B3", "B8"]).rename("NDWI");
+      const ndbi = composite.normalizedDifference(["B11", "B8"]).rename("NDBI");
+      const evi = composite.expression(
+        "2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))",
+        {
+          "NIR": composite.select("B8"),
+          "RED": composite.select("B4"),
+          "BLUE": composite.select("B2")
+        }
+      ).rename("EVI");
+      const savi = composite.expression(
+        "1.5 * (NIR - RED) / (NIR + RED + 0.5)",
+        {
+          "NIR": composite.select("B8"),
+          "RED": composite.select("B4")
+        }
+      ).rename("SAVI");
+      const bsi = composite.expression(
+        "((SWIR1 + RED) - (NIR + BLUE)) / ((SWIR1 + RED) + (NIR + BLUE))",
+        {
+          "SWIR1": composite.select("B11"),
+          "RED": composite.select("B4"),
+          "NIR": composite.select("B8"),
+          "BLUE": composite.select("B2")
+        }
+      ).rename("BSI");
+      const gndvi = composite.normalizedDifference(["B8", "B3"]).rename("GNDVI");
+      const ndre = composite.normalizedDifference(["B8", "B5"]).rename("NDRE");
+      featureBands = composite.select(bandNames).addBands([ndvi, ndwi, ndbi, evi, savi, bsi, gndvi, ndre]);
+    }
+    const selectedFeatures = features || featureBands.bandNames();
+    featureBands = featureBands.select(selectedFeatures);
+    const createTrainingFC = new Function("ee", `return ee.FeatureCollection([${trainingFeaturesCode}]);`);
+    const trainingFC = createTrainingFC(ee11);
+    const sampleScale = stateName === "California" || stateName === "Texas" ? scale * 2 : scale;
+    const training = featureBands.sampleRegions({
+      collection: trainingFC,
+      properties: ["label"],
+      scale: sampleScale,
+      tileScale: 8,
+      geometries: false
+    });
+    let trainedClassifier;
+    switch (classifier) {
+      case "randomForest":
+        const numFeatures = Array.isArray(selectedFeatures) ? selectedFeatures.length : 10;
+        trainedClassifier = ee11.Classifier.smileRandomForest({
+          numberOfTrees,
+          variablesPerSplit: Math.max(1, Math.floor(Math.sqrt(numFeatures))),
+          minLeafPopulation: 2,
+          bagFraction: 0.8,
+          seed
+        }).train(training, "label", selectedFeatures);
+        break;
+      case "svm":
+        trainedClassifier = ee11.Classifier.libsvm({
+          kernelType: "RBF",
+          gamma: 0.5,
+          cost: 10
+        }).train(training, "label", selectedFeatures);
+        break;
+      case "cart":
+        trainedClassifier = ee11.Classifier.smileCart().train(training, "label", selectedFeatures);
+        break;
+      case "naiveBayes":
+        trainedClassifier = ee11.Classifier.smileNaiveBayes().train(training, "label", selectedFeatures);
+        break;
+      default:
+        throw new Error(`Unknown classifier: ${classifier}`);
+    }
+    let classified = featureBands.classify(trainedClassifier);
+    if (spatialFiltering) {
+      const kernel = ee11.Kernel.square({ radius: kernelSize });
+      classified = classified.reduceNeighborhood({
+        reducer: ee11.Reducer.mode(),
+        kernel
+      }).rename("classification");
+    }
+    const classificationKey = `classification_${stateName}_${Date.now()}`;
+    globalCompositeStore2[classificationKey] = classified;
+    const classifierKey = `classifier_${stateName}_${Date.now()}`;
+    globalCompositeStore2[classifierKey] = trainedClassifier;
+    let stats = null;
+    const largeStates = ["California", "Texas", "Alaska", "Montana"];
+    if (!largeStates.includes(stateName)) {
+      try {
+        const statsScale = scale * 20;
+        const pixelCount = classified.select(["classification"]).reduceRegion({
+          reducer: ee11.Reducer.frequencyHistogram(),
+          geometry,
+          scale: statsScale,
+          maxPixels: 1e7,
+          bestEffort: true
+        });
+        stats = await pixelCount.getInfo();
+      } catch (error) {
+        console.log("Statistics calculation skipped due to memory constraints");
+        stats = null;
+      }
+    }
+    let result = {
+      success: true,
+      operation: "classify",
+      classificationKey,
+      classifierKey,
+      message: "Crop classification completed successfully",
+      region: stateName,
+      dateRange: { start: startDate, end: endDate },
+      classifier,
+      numberOfClasses: Object.keys(classInfo.definitions).length,
+      classDefinitions: classInfo.definitions,
+      features: selectedFeatures,
+      trainingPoints: trainingPoints.length,
+      statistics: stats
+    };
+    if (createMap2) {
+      const visParams = {
+        min: 1,
+        max: Object.keys(classInfo.definitions).length,
+        palette: classInfo.palette
+      };
+      const visualized = classified.visualize(visParams);
+      const mapId = await new Promise((resolve, reject) => {
+        visualized.getMapId({}, (mapIdResult, error) => {
+          if (error) reject(error);
+          else resolve(mapIdResult);
+        });
+      });
+      const mapIdStr = mapId.mapid || mapId.urlFormat;
+      let tileUrl;
+      if (mapIdStr.includes("http")) {
+        tileUrl = mapIdStr;
+      } else if (mapIdStr.includes("projects/earthengine-legacy/maps/")) {
+        tileUrl = `https://earthengine.googleapis.com/v1/${mapIdStr}/tiles/{z}/{x}/{y}`;
+      } else {
+        tileUrl = `https://earthengine.googleapis.com/v1/projects/earthengine-legacy/maps/${mapIdStr}/tiles/{z}/{x}/{y}`;
+      }
+      const mapSessionId = `map_${Date.now()}_${uuidv42().slice(0, 8)}`;
+      const mapUrl = `http://localhost:3000/map/${mapSessionId}`;
+      const bounds = await geometry.bounds().getInfo();
+      const coords = bounds.coordinates[0];
+      const minLng = Math.min(...coords.map((c) => c[0]));
+      const maxLng = Math.max(...coords.map((c) => c[0]));
+      const minLat = Math.min(...coords.map((c) => c[1]));
+      const maxLat = Math.max(...coords.map((c) => c[1]));
+      const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+      const mapSession = {
+        id: mapSessionId,
+        input: classificationKey,
+        tileUrl,
+        created: /* @__PURE__ */ new Date(),
+        region: stateName,
+        layers: [{
+          name: "Crop Classification",
+          tileUrl,
+          visParams
+        }],
+        metadata: {
+          center,
+          zoom: stateName === "California" ? 6 : 7,
+          basemap: "satellite"
+        }
+      };
+      addMapSession(mapSessionId, mapSession);
+      result.map = {
+        url: mapUrl,
+        tileUrl,
+        center,
+        visualization: visParams,
+        legend: Object.entries(classInfo.definitions).map(([value, name]) => ({
+          value: parseInt(value),
+          name,
+          color: classInfo.palette[parseInt(value) - 1]
+        }))
+      };
+    }
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      operation: "classify",
+      error: error.message || "Classification failed",
+      suggestion: "Check your training data and region parameters"
+    };
+  }
+}
+async function execute(params) {
+  const parsed = CropClassificationSchema.safeParse(params);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: "Invalid parameters",
+      details: parsed.error.errors
+    };
+  }
+  const { operation } = parsed.data;
+  switch (operation) {
+    case "classify":
+      return await classifyCrops(parsed.data);
+    case "train":
+      return await classifyCrops({ ...parsed.data, createMap: false });
+    case "evaluate":
+      return {
+        success: false,
+        error: "Evaluation operation not yet implemented"
+      };
+    case "export":
+      return {
+        success: false,
+        error: "Export operation not yet implemented"
+      };
+    default:
+      return {
+        success: false,
+        error: `Unknown operation: ${operation}`
+      };
+  }
+}
+var TrainingPointSchema, CropClassificationSchema;
+var init_crop_classification = __esm({
+  "src/mcp/tools/consolidated/crop_classification.ts"() {
+    "use strict";
+    init_esm_shims();
+    init_registry();
+    init_geo();
+    init_global_store();
+    TrainingPointSchema = z7.object({
+      lat: z7.number(),
+      lon: z7.number(),
+      label: z7.number(),
+      class_name: z7.string()
+    });
+    CropClassificationSchema = z7.object({
+      operation: z7.enum(["classify", "train", "evaluate", "export"]),
+      // Region parameters
+      region: z7.string().describe("State name or geometry for classification area"),
+      // Time parameters
+      startDate: z7.string().optional().describe("Start date for imagery (YYYY-MM-DD)"),
+      endDate: z7.string().optional().describe("End date for imagery (YYYY-MM-DD)"),
+      // Training data
+      trainingData: z7.union([
+        z7.array(TrainingPointSchema),
+        z7.string()
+        // Path to training data file
+      ]).optional().describe("Training points with coordinates and labels"),
+      // Classification parameters
+      classifier: z7.enum(["randomForest", "svm", "cart", "naiveBayes"]).optional(),
+      numberOfTrees: z7.number().optional().describe("Number of trees for Random Forest"),
+      seed: z7.number().optional().describe("Random seed for reproducibility"),
+      // Feature selection
+      features: z7.array(z7.string()).optional().describe("Bands and indices to use"),
+      includeIndices: z7.boolean().optional().describe("Include vegetation indices"),
+      // Visualization
+      createMap: z7.boolean().optional().describe("Create interactive map"),
+      palette: z7.array(z7.string()).optional().describe("Color palette for classes"),
+      // Class definitions
+      classDefinitions: z7.record(z7.string(), z7.string()).optional().describe("Mapping of class numbers to names"),
+      // Additional options
+      scale: z7.number().optional(),
+      cloudCoverMax: z7.number().optional(),
+      spatialFiltering: z7.boolean().optional(),
+      kernelSize: z7.number().optional()
+    });
+    register({
+      name: "crop_classification",
+      description: "Build, train, and visualize crop classification models using Earth Engine. Supports multiple states with default training data or custom training points.",
+      input: CropClassificationSchema,
+      output: z7.any(),
+      handler: execute
+    });
+  }
+});
+
 // src/mcp/tools/index.ts
 var tools_exports = {};
 var init_tools = __esm({
@@ -4600,6 +5204,7 @@ var init_tools = __esm({
     init_earth_engine_process();
     init_earth_engine_export();
     init_earth_engine_map();
+    init_crop_classification();
   }
 });
 

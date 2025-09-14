@@ -337,6 +337,62 @@ const TOOLS = [
       },
       required: ['region']
     }
+  },
+  {
+    name: 'crop_classification',
+    description: 'COMPLETE crop classification tool - builds model, trains classifier, performs classification, AND creates interactive map automatically. Returns map URL directly. DO NOT call other tools after this - it does everything. Supports Iowa, California, Texas, Kansas, Nebraska, Illinois with built-in training data.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        operation: {
+          type: 'string',
+          enum: ['classify', 'train', 'evaluate', 'export'],
+          description: 'Operation to perform (use "classify" for full classification with map)',
+          default: 'classify'
+        },
+        region: {
+          type: 'string',
+          description: 'State name (Iowa, California, Texas, Kansas, Nebraska, Illinois) or geometry for classification area'
+        },
+        startDate: {
+          type: 'string',
+          description: 'Start date for imagery (YYYY-MM-DD)',
+          default: '2024-06-01'
+        },
+        endDate: {
+          type: 'string',
+          description: 'End date for imagery (YYYY-MM-DD)',
+          default: '2024-08-31'
+        },
+        classifier: {
+          type: 'string',
+          enum: ['randomForest', 'svm', 'cart', 'naiveBayes'],
+          description: 'Classification algorithm',
+          default: 'randomForest'
+        },
+        createMap: {
+          type: 'boolean',
+          description: 'Create interactive map',
+          default: true
+        },
+        includeIndices: {
+          type: 'boolean',
+          description: 'Include vegetation indices (NDVI, EVI, etc.)',
+          default: true
+        },
+        scale: {
+          type: 'number',
+          description: 'Processing scale in meters',
+          default: 30
+        },
+        numberOfTrees: {
+          type: 'number',
+          description: 'Number of trees for Random Forest',
+          default: 100
+        }
+      },
+      required: ['region']
+    }
   }
 ];
 
@@ -469,12 +525,16 @@ async function handleMessage(message) {
   }
 }
 
-// Handle tool calls
-async function handleToolCall(message) {
-  const { name, arguments: args } = message.params;
-  
-  try {
-    let sseResult;
+  // Handle tool calls
+  async function handleToolCall(message) {
+    const { name, arguments: args } = message.params;
+    
+    // Debug logging
+    process.stderr.write(`[MCP-SSE] Tool call received: ${name}\n`);
+    process.stderr.write(`[MCP-SSE] Arguments: ${JSON.stringify(args, null, 2)}\n`);
+    
+    try {
+      let sseResult;
     
     // Route tool calls to appropriate SSE endpoints
     if (name === 'earth_engine_data' || 
@@ -515,6 +575,10 @@ async function handleToolCall(message) {
         modelType: 'water_quality',
         ...args
       });
+    } else if (name === 'crop_classification') {
+      // Call the crop classification tool directly
+      process.stderr.write(`[MCP-SSE] Routing crop_classification to SSE endpoint\n`);
+      sseResult = await callSSE('crop_classification', args);
     } else {
       sendError(message.id, -32602, `Unknown tool: ${name}`);
       return;
