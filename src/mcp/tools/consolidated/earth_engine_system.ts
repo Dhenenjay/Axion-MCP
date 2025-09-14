@@ -11,6 +11,7 @@ import { Storage } from '@google-cloud/storage';
 import fs from 'fs/promises';
 import path from 'path';
 import { optimizer } from '@/src/utils/ee-optimizer';
+import { globalCompositeStore as compositeStore } from './stores';
 
 // Main schema for the consolidated tool
 const SystemToolSchema = z.object({
@@ -153,16 +154,17 @@ async function executeCode(params: any) {
   
   try {
     // Create a function from the code string with timeout
-    const func = new Function('ee', 'params', code);
+    // Add 'global' to the function context to support global.variable = value
+    const func = new Function('ee', 'params', 'global', code);
     
     // Set a timeout for execution
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Code execution timed out after 30 seconds')), 30000)
     );
     
-    // Execute the code with Earth Engine and params
+    // Execute the code with Earth Engine, params, and compositeStore as global
     const executePromise = (async () => {
-      const result = await func(ee, codeParams);
+      const result = await func(ee, codeParams, compositeStore);
       
       // If result is an Earth Engine Image, store it for later use
       if (result && typeof result.select === 'function' && typeof result.visualize === 'function') {

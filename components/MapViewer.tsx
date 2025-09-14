@@ -80,20 +80,18 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
 
     // Add Earth Engine layers
     const eeLayers: { [key: string]: L.TileLayer } = {};
-    console.log('Adding Earth Engine layers:', mapData.layers);
+    
     mapData.layers.forEach((layer, index) => {
-      console.log(`Adding layer ${layer.name} with URL:`, layer.tileUrl);
       const eeLayer = L.tileLayer(layer.tileUrl, {
         attribution: 'Google Earth Engine',
         maxZoom: 20,
-        opacity: 1, // Make sure layer is visible
-        zIndex: 1000 // Ensure it's on top of base layer
+        opacity: 1
       });
       
       eeLayers[`EE: ${layer.name}`] = eeLayer;
       eeLayer.addTo(map);
     });
-
+    
     // Add layer control
     const layerControl = L.control.layers(baseLayers, eeLayers, {
       position: 'topright',
@@ -214,6 +212,34 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
           width: 100%;
           height: calc(100vh - 80px);
           position: relative;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes flicker {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
 
         .layer-switcher {

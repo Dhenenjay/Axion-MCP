@@ -1,10 +1,11 @@
 // Import consolidated super tools
-// These 4 tools replace the 32 individual tools for better MCP stability
+// These 5 tools replace the 32 individual tools for better MCP stability
 import './consolidated/earth_engine_data';     // Data operations: search, info, geometry
 import './consolidated/earth_engine_system';   // System operations: auth, setup, help  
 import './consolidated/earth_engine_process';  // Processing: NDVI, NDWI, thumbnail, timeseries
 import './consolidated/earth_engine_export';   // Export operations: toAsset, toDrive, toGCS
 import './consolidated/earth_engine_map';      // Interactive map viewer for large regions
+import './consolidated/crop_classification';   // Crop classification: build, train, visualize models
 
 // Legacy tool imports commented out - replaced by consolidated tools above
 // import './auth_check';

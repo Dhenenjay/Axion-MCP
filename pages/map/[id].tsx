@@ -50,6 +50,7 @@ export default function MapViewerPage() {
         return res.json();
       })
       .then(data => {
+        console.log('Map data from API:', data);
         setMapData(data);
         setLoading(false);
       })
@@ -91,7 +92,7 @@ export default function MapViewerPage() {
   return (
     <>
       <Head>
-        <title>Map Viewer - {mapData.region}</title>
+        <title>Planetary Engine - {mapData.region}</title>
         <link
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -102,7 +103,7 @@ export default function MapViewerPage() {
       
       <div className="map-page">
         <div className="map-header">
-          <h1>Earth Engine Map Viewer</h1>
+          <h1>Planetary Engine Map Viewer</h1>
           <div className="map-info">
             <span className="region">📍 {mapData.region}</span>
             <span className="layers">🗺️ {mapData.layers.length} layer(s)</span>
@@ -138,16 +139,18 @@ export default function MapViewerPage() {
 
         .map-header {
           background: #2a2a2a;
-          padding: 1rem;
+          padding: 1rem 2rem;
           border-bottom: 1px solid #444;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .map-header h1 {
           margin: 0;
           font-size: 1.5rem;
+          font-weight: 600;
           color: #4CAF50;
         }
 

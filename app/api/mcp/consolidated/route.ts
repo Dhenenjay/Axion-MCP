@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       'earth_engine_process', 
       'earth_engine_export',
       'earth_engine_system',
-      'earth_engine_map'
+      'earth_engine_map',
+      'crop_classification'  // New crop classification tool
     ];
     
     // Model tools that use the core tools internally

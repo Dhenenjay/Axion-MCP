@@ -53,3 +53,28 @@ server.log
 
 # Temporary sync files
 .node-xmlhttprequest-sync-*
+
+# Test files
+test-*.js
+test_*.js
+test_*.ts
+iowa-*.js
+california-*.js
+*-classification.js
+*-classifier*.js
+*-crops*.js
+*-map*.js
+*-realtime*.js
+*-rf-*.js
+*-step*.js
+*-train*.js
+*-working*.js
+run-*.js
+run-*.ps1
+setup-*.ps1
+check-*.js
+debug_*.js
+mcp-start.mjs
+start-mcp.cjs
+TEST_SUMMARY.md
+*.html
