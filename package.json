@@ -1,7 +1,8 @@
 {
-  "name": "next.js-mcp-server",
-  "version": "0.1.0",
-  "private": true,
+  "name": "planetary-mcp",
+  "version": "1.0.0",
+  "description": "Planetary MCP - Earth observation and geospatial analysis tools",
+  "private": false,
   "scripts": {
     "setup:check": "node setup-check.js",
     "dev": "tsx watch src/index.ts",

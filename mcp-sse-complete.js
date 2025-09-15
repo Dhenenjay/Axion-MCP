@@ -500,8 +500,8 @@ async function handleMessage(message) {
           resources: {}
         },
         serverInfo: {
-          name: 'earth-engine-complete',
-          version: '2.0.0'
+          name: 'Planetary MCP',
+          version: '1.0.0'
         }
       });
     } else if (message.method === 'notifications/initialized') {

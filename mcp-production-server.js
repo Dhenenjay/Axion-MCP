@@ -99,7 +99,7 @@ async function handleRequest(request) {
               resources: {}
             },
             serverInfo: {
-              name: 'earth-engine-mcp',
+              name: 'Planetary MCP',
               version: '1.0.0'
             }
           }

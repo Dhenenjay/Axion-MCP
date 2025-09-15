@@ -1,6 +1,6 @@
-# 🌍 Earth Engine MCP Server - Production Ready
+# 🌍 Planetary MCP - Production Ready
 
-## 🚀 100% Operational - All Tools Working Perfectly
+## 🚀 100% Operational - All Earth Observation Tools Working Perfectly
 
 This is the **production-ready** version of the Earth Engine MCP Server with complete Claude Desktop integration and 100% test coverage.
 
@@ -73,9 +73,9 @@ npx next dev
    ```json
    {
      "mcpServers": {
-       "earth-engine-complete": {
+       "planetary": {
          "command": "node",
-         "args": ["C:\\path\\to\\earth-engine-mcp-production\\mcp-sse-complete.js"],
+         "args": ["C:\\path\\to\\planetary-mcp\\mcp-sse-complete.js"],
          "env": {
            "GOOGLE_APPLICATION_CREDENTIALS": "C:\\path\\to\\your\\ee-key.json"
          }
