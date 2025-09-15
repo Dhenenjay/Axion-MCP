@@ -215,6 +215,7 @@ function getDefaultTrainingData(stateName: string): any[] {
 
 /**
  * Automatically add common sense classes (urban, water, vegetation) to training data
+ * This function ALWAYS adds these classes if they're missing to ensure comprehensive classification
  */
 function augmentWithCommonSenseClasses(
   trainingPoints: any[], 
@@ -228,35 +229,50 @@ function augmentWithCommonSenseClasses(
   let nextLabel = Math.max(...Array.from(existingLabels)) + 1;
   const augmentedPoints = [...trainingPoints];
   
+  // Track if we added any common classes
+  let addedCommonClasses = false;
+  
   // Add urban class if not present
   const hasUrban = existingClasses.has('urban') || existingClasses.has('built-up') || 
                    existingClasses.has('city') || existingClasses.has('developed');
   if (!hasUrban) {
     const urbanPoints = [
-      // Major cities based on state
+      // Major cities based on state - add more points for better coverage
       ...(stateName === 'Iowa' ? [
         { lat: 41.5868, lon: -93.6250 }, // Des Moines
-        { lat: 41.6611, lon: -91.5302 }  // Cedar Rapids
+        { lat: 41.6611, lon: -91.5302 }, // Cedar Rapids
+        { lat: 42.5003, lon: -96.4003 }, // Sioux City
+        { lat: 42.0308, lon: -92.9134 }  // Waterloo
       ] : []),
       ...(stateName === 'California' ? [
         { lat: 34.0522, lon: -118.2437 }, // Los Angeles  
-        { lat: 37.7749, lon: -122.4194 }  // San Francisco
+        { lat: 37.7749, lon: -122.4194 }, // San Francisco
+        { lat: 32.7157, lon: -117.1611 }, // San Diego
+        { lat: 38.5816, lon: -121.4944 }  // Sacramento
       ] : []),
       ...(stateName === 'Texas' ? [
         { lat: 29.7604, lon: -95.3698 }, // Houston
-        { lat: 32.7767, lon: -96.7970 }  // Dallas
+        { lat: 32.7767, lon: -96.7970 }, // Dallas
+        { lat: 30.2672, lon: -97.7431 }, // Austin
+        { lat: 29.4241, lon: -98.4936 }  // San Antonio
       ] : []),
       ...(stateName === 'Kansas' ? [
         { lat: 37.6872, lon: -97.3301 }, // Wichita
-        { lat: 39.0473, lon: -95.6752 }  // Topeka
+        { lat: 39.0473, lon: -95.6752 }, // Topeka
+        { lat: 39.0997, lon: -94.5786 }, // Kansas City
+        { lat: 38.9717, lon: -95.2353 }  // Lawrence
       ] : []),
       ...(stateName === 'Nebraska' ? [
         { lat: 41.2565, lon: -95.9345 }, // Omaha
-        { lat: 40.8136, lon: -96.7026 }  // Lincoln
+        { lat: 40.8136, lon: -96.7026 }, // Lincoln
+        { lat: 40.9264, lon: -98.3420 }, // Grand Island
+        { lat: 42.0250, lon: -97.4195 }  // Norfolk
       ] : []),
       ...(stateName === 'Illinois' ? [
         { lat: 41.8781, lon: -87.6298 }, // Chicago
-        { lat: 39.7817, lon: -89.6501 }  // Springfield
+        { lat: 39.7817, lon: -89.6501 }, // Springfield
+        { lat: 41.5253, lon: -88.0817 }, // Aurora
+        { lat: 40.4842, lon: -88.9937 }  // Bloomington
       ] : [])
     ];
     
@@ -267,7 +283,10 @@ function augmentWithCommonSenseClasses(
         class_name: 'urban'
       });
     });
-    if (urbanPoints.length > 0) nextLabel++;
+    if (urbanPoints.length > 0) {
+      nextLabel++;
+      addedCommonClasses = true;
+    }
   }
   
   // Add water class if not present
@@ -277,27 +296,39 @@ function augmentWithCommonSenseClasses(
     const waterPoints = [
       ...(stateName === 'Iowa' ? [
         { lat: 41.0585, lon: -91.5955 }, // Mississippi River
-        { lat: 42.0458, lon: -93.3688 }  // Clear Lake
+        { lat: 42.0458, lon: -93.3688 }, // Clear Lake
+        { lat: 42.4039, lon: -94.7014 }, // Storm Lake
+        { lat: 41.3911, lon: -91.0432 }  // Coralville Lake
       ] : []),
       ...(stateName === 'California' ? [
         { lat: 39.0968, lon: -120.0324 }, // Lake Tahoe
-        { lat: 33.2175, lon: -115.6139 }  // Salton Sea
+        { lat: 33.2175, lon: -115.6139 }, // Salton Sea
+        { lat: 37.9993, lon: -122.1339 }, // San Francisco Bay
+        { lat: 36.9806, lon: -121.8814 }  // Monterey Bay
       ] : []),
       ...(stateName === 'Texas' ? [
         { lat: 30.4064, lon: -98.1145 }, // Lake Travis
-        { lat: 29.5964, lon: -95.0565 }  // Galveston Bay
+        { lat: 29.5964, lon: -95.0565 }, // Galveston Bay
+        { lat: 32.7714, lon: -97.8056 }, // Lake Worth
+        { lat: 31.0969, lon: -97.7171 }  // Belton Lake
       ] : []),
       ...(stateName === 'Kansas' ? [
         { lat: 38.7022, lon: -99.3236 }, // Cedar Bluff Reservoir
-        { lat: 39.0558, lon: -96.5864 }  // Tuttle Creek Lake
+        { lat: 39.0558, lon: -96.5864 }, // Tuttle Creek Lake
+        { lat: 37.2739, lon: -97.8684 }, // Cheney Reservoir
+        { lat: 38.3714, lon: -95.7308 }  // Pomona Lake
       ] : []),
       ...(stateName === 'Nebraska' ? [
         { lat: 41.2044, lon: -96.0819 }, // Missouri River
-        { lat: 41.1756, lon: -100.7715 } // Lake McConaughy
+        { lat: 41.1756, lon: -100.7715 }, // Lake McConaughy
+        { lat: 40.7719, lon: -96.8867 }, // Branched Oak Lake
+        { lat: 42.7614, lon: -97.3584 }  // Lewis and Clark Lake
       ] : []),
       ...(stateName === 'Illinois' ? [
         { lat: 41.8919, lon: -87.6051 }, // Lake Michigan
-        { lat: 39.0000, lon: -90.6731 }  // Mississippi River
+        { lat: 39.0000, lon: -90.6731 }, // Mississippi River
+        { lat: 37.2289, lon: -88.7270 }, // Rend Lake
+        { lat: 40.6389, lon: -89.3981 }  // Illinois River
       ] : [])
     ];
     
@@ -308,7 +339,10 @@ function augmentWithCommonSenseClasses(
         class_name: 'water'
       });
     });
-    if (waterPoints.length > 0) nextLabel++;
+    if (waterPoints.length > 0) {
+      nextLabel++;
+      addedCommonClasses = true;
+    }
   }
   
   // Add natural vegetation if not present (forest/grassland)
@@ -489,19 +523,20 @@ async function classifyCrops(params: CropClassificationParams) {
       if (trainingPoints.length === 0) {
         throw new Error(`No default training data available for ${stateName}. Please provide custom training data.`);
       }
-    } else {
-      // If custom training data is provided, augment it with common sense classes
-      // This ensures urban, water, and natural vegetation are always included
-      trainingPoints = augmentWithCommonSenseClasses(trainingPoints, stateName);
     }
+    
+    // ALWAYS augment with common sense classes
+    // This ensures urban, water, and natural vegetation are always included
+    trainingPoints = augmentWithCommonSenseClasses(trainingPoints, stateName);
     
     // Get class info
     let classInfo = classDefinitions && palette 
       ? { definitions: classDefinitions, palette } 
       : getDefaultClassInfo(stateName);
     
-    // If we augmented the training data, update class definitions
-    if (trainingData && trainingPoints.length > trainingData.length) {
+    // Always update class definitions to include augmented classes
+    // This ensures urban, water, and vegetation are always in the classification
+    if (trainingPoints.length > (trainingData ? trainingData.length : 0)) {
       // Create new class definitions including augmented classes
       const updatedDefinitions: Record<string, string> = {};
       const updatedPalette: string[] = [];
