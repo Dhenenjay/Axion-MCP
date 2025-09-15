@@ -27,42 +27,42 @@ const TrainingPointSchema = z.object({
 
 // Main tool schema
 const CropClassificationSchema = z.object({
-  operation: z.enum(['classify', 'train', 'evaluate', 'export']),
+  operation: z.enum(['classify', 'train', 'evaluate', 'export']).describe('Operation type: classify (full classification), train (model only), evaluate (accuracy metrics), export (save results)'),
   
   // Region parameters
-  region: z.string().describe('State name or geometry for classification area'),
+  region: z.string().describe('US state name (e.g., Iowa, California) or geometry. Supported states: Iowa, California, Texas, Kansas, Nebraska, Illinois'),
   
   // Time parameters
-  startDate: z.string().optional().describe('Start date for imagery (YYYY-MM-DD)'),
-  endDate: z.string().optional().describe('End date for imagery (YYYY-MM-DD)'),
+  startDate: z.string().optional().describe('Start date for imagery in YYYY-MM-DD format. Default: 6 months ago'),
+  endDate: z.string().optional().describe('End date for imagery in YYYY-MM-DD format. Default: current date'),
   
   // Training data
   trainingData: z.union([
     z.array(TrainingPointSchema),
     z.string() // Path to training data file
-  ]).optional().describe('Training points with coordinates and labels'),
+  ]).optional().describe('Optional custom training points. If not provided, uses default training data for the specified state'),
   
   // Classification parameters
-  classifier: z.enum(['randomForest', 'svm', 'cart', 'naiveBayes']).optional(),
-  numberOfTrees: z.number().optional().describe('Number of trees for Random Forest'),
-  seed: z.number().optional().describe('Random seed for reproducibility'),
+  classifier: z.enum(['randomForest', 'svm', 'cart', 'naiveBayes']).optional().describe('Machine learning classifier. Default: randomForest (best accuracy)'),
+  numberOfTrees: z.number().optional().describe('Number of trees for Random Forest classifier (10-500). Default: 50'),
+  seed: z.number().optional().describe('Random seed for reproducibility. Default: 42'),
   
   // Feature selection
-  features: z.array(z.string()).optional().describe('Bands and indices to use'),
-  includeIndices: z.boolean().optional().describe('Include vegetation indices'),
+  features: z.array(z.string()).optional().describe('Specific bands and indices to use. Default: all available bands'),
+  includeIndices: z.boolean().optional().describe('Include vegetation indices (NDVI, EVI, SAVI, NDWI). Default: true'),
   
   // Visualization
-  createMap: z.boolean().optional().describe('Create interactive map'),
-  palette: z.array(z.string()).optional().describe('Color palette for classes'),
+  createMap: z.boolean().optional().describe('Create interactive web map (slower for large areas). Default: false. Set to false for faster processing'),
+  palette: z.array(z.string()).optional().describe('Color palette for classes. Default: automatic based on class count'),
   
   // Class definitions
-  classDefinitions: z.record(z.string(), z.string()).optional().describe('Mapping of class numbers to names'),
+  classDefinitions: z.record(z.string(), z.string()).optional().describe('Mapping of class numbers to names. Default: uses training data class names'),
   
   // Additional options
-  scale: z.number().optional(),
-  cloudCoverMax: z.number().optional(),
-  spatialFiltering: z.boolean().optional(),
-  kernelSize: z.number().optional()
+  scale: z.number().optional().describe('Pixel resolution in meters (10-1000). Default: 30 for Landsat/Sentinel'),
+  cloudCoverMax: z.number().optional().describe('Maximum cloud cover percentage (0-100). Default: 20'),
+  spatialFiltering: z.boolean().optional().describe('Apply spatial filtering to reduce noise. Default: false'),
+  kernelSize: z.number().optional().describe('Kernel size for spatial filtering (1-9). Default: 3')
 });
 
 // Type definitions
@@ -853,9 +853,34 @@ export async function execute(params: any) {
 // Register the tool with MCP
 register({
   name: 'crop_classification',
-  description: 'Build, train, and visualize crop classification models using Earth Engine. Supports multiple states with default training data or custom training points.',
+  description: `Machine learning crop and land cover classification using satellite imagery. 
+    SUPPORTED REGIONS: Iowa, California, Texas, Kansas, Nebraska, Illinois (or custom coordinates).
+    FEATURES: Automatic cloud masking, vegetation indices (NDVI, EVI, SAVI, NDWI), multiple classifiers (Random Forest, SVM, CART, Naive Bayes).
+    OUTPUTS: Classification map, accuracy metrics, optional interactive web map.
+    PERFORMANCE: For faster processing, set createMap=false. Large regions may timeout with map creation enabled.
+    DEFAULT CLASSES by state: Iowa (corn, soybean, wheat, urban, water), California (almonds, grapes, citrus, rice, forest, urban, desert, water), Texas (cotton, wheat, corn, sorghum, grassland, urban).`,
   input: CropClassificationSchema,
-  output: z.any(),
+  output: z.object({
+    success: z.boolean(),
+    operation: z.string(),
+    classificationKey: z.string().optional(),
+    classifierKey: z.string().optional(),
+    message: z.string(),
+    region: z.string(),
+    dateRange: z.object({
+      start: z.string(),
+      end: z.string()
+    }),
+    classifier: z.string(),
+    numberOfClasses: z.number(),
+    classDefinitions: z.record(z.string(), z.string()),
+    features: z.array(z.string()),
+    trainingPoints: z.number(),
+    statistics: z.any().optional(),
+    mapUrl: z.string().optional(),
+    tileUrl: z.string().optional(),
+    mapSessionId: z.string().optional()
+  }),
   handler: execute
 });
 
@@ -865,39 +890,66 @@ export const handler = execute;
 // Tool metadata for reference
 export const metadata = {
   name: 'crop_classification',
-  description: 'Build, train, and visualize crop classification models using Earth Engine',
+  description: 'Machine learning crop and land cover classification',
   parameters: CropClassificationSchema,
   examples: [
     {
-      description: 'Classify crops in Iowa with default training data',
+      description: 'Quick classification for Iowa (no map for speed)',
       params: {
         operation: 'classify',
         region: 'Iowa',
-        createMap: true
+        startDate: '2024-05-01',
+        endDate: '2024-09-30',
+        classifier: 'randomForest',
+        numberOfTrees: 50,
+        includeIndices: true,
+        createMap: false  // Fast mode
       }
     },
     {
-      description: 'Classify California with custom date range',
+      description: 'California classification with map',
       params: {
         operation: 'classify',
         region: 'California',
-        startDate: '2024-04-01',
-        endDate: '2024-10-31',
-        createMap: true
+        startDate: '2024-01-01',
+        endDate: '2024-06-30',
+        classifier: 'svm',
+        includeIndices: true,
+        scale: 30,
+        createMap: true  // Will be slower
       }
     },
     {
-      description: 'Custom classification with training data',
+      description: 'Custom training data example',
       params: {
         operation: 'classify',
         region: 'Texas',
+        startDate: '2024-06-01',
+        endDate: '2024-10-31',
         trainingData: [
           { lat: 33.5779, lon: -101.8552, label: 1, class_name: 'cotton' },
-          { lat: 35.2220, lon: -101.8313, label: 2, class_name: 'wheat' }
+          { lat: 35.2220, lon: -101.8313, label: 2, class_name: 'wheat' },
+          { lat: 36.0726, lon: -102.0770, label: 3, class_name: 'corn' },
+          { lat: 31.9686, lon: -102.0779, label: 4, class_name: 'sorghum' },
+          { lat: 31.0000, lon: -100.0000, label: 5, class_name: 'grassland' }
         ],
         classifier: 'randomForest',
-        numberOfTrees: 150,
-        createMap: true
+        numberOfTrees: 100,
+        includeIndices: true,
+        spatialFiltering: true,
+        kernelSize: 3,
+        createMap: false  // Recommended for large regions
+      }
+    },
+    {
+      description: 'Train model only (no classification)',
+      params: {
+        operation: 'train',
+        region: 'Kansas',
+        startDate: '2024-05-01',
+        endDate: '2024-09-30',
+        classifier: 'cart',
+        includeIndices: true
       }
     }
   ]
