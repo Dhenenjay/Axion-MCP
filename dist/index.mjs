@@ -4784,6 +4784,216 @@ function getDefaultTrainingData(stateName) {
   };
   return trainingDataSets[stateName] || [];
 }
+function augmentWithCommonSenseClasses(trainingPoints, stateName) {
+  const existingClasses = new Set(trainingPoints.map((p) => p.class_name.toLowerCase()));
+  const existingLabels = new Set(trainingPoints.map((p) => p.label));
+  let nextLabel = Math.max(...Array.from(existingLabels)) + 1;
+  const augmentedPoints = [...trainingPoints];
+  let addedCommonClasses = false;
+  const hasUrban = existingClasses.has("urban") || existingClasses.has("built-up") || existingClasses.has("city") || existingClasses.has("developed");
+  if (!hasUrban) {
+    const urbanPoints = [
+      // Major cities based on state - add more points for better coverage
+      ...stateName === "Iowa" ? [
+        { lat: 41.5868, lon: -93.625 },
+        // Des Moines
+        { lat: 41.6611, lon: -91.5302 },
+        // Cedar Rapids
+        { lat: 42.5003, lon: -96.4003 },
+        // Sioux City
+        { lat: 42.0308, lon: -92.9134 }
+        // Waterloo
+      ] : [],
+      ...stateName === "California" ? [
+        { lat: 34.0522, lon: -118.2437 },
+        // Los Angeles  
+        { lat: 37.7749, lon: -122.4194 },
+        // San Francisco
+        { lat: 32.7157, lon: -117.1611 },
+        // San Diego
+        { lat: 38.5816, lon: -121.4944 }
+        // Sacramento
+      ] : [],
+      ...stateName === "Texas" ? [
+        { lat: 29.7604, lon: -95.3698 },
+        // Houston
+        { lat: 32.7767, lon: -96.797 },
+        // Dallas
+        { lat: 30.2672, lon: -97.7431 },
+        // Austin
+        { lat: 29.4241, lon: -98.4936 }
+        // San Antonio
+      ] : [],
+      ...stateName === "Kansas" ? [
+        { lat: 37.6872, lon: -97.3301 },
+        // Wichita
+        { lat: 39.0473, lon: -95.6752 },
+        // Topeka
+        { lat: 39.0997, lon: -94.5786 },
+        // Kansas City
+        { lat: 38.9717, lon: -95.2353 }
+        // Lawrence
+      ] : [],
+      ...stateName === "Nebraska" ? [
+        { lat: 41.2565, lon: -95.9345 },
+        // Omaha
+        { lat: 40.8136, lon: -96.7026 },
+        // Lincoln
+        { lat: 40.9264, lon: -98.342 },
+        // Grand Island
+        { lat: 42.025, lon: -97.4195 }
+        // Norfolk
+      ] : [],
+      ...stateName === "Illinois" ? [
+        { lat: 41.8781, lon: -87.6298 },
+        // Chicago
+        { lat: 39.7817, lon: -89.6501 },
+        // Springfield
+        { lat: 41.5253, lon: -88.0817 },
+        // Aurora
+        { lat: 40.4842, lon: -88.9937 }
+        // Bloomington
+      ] : []
+    ];
+    urbanPoints.forEach((p) => {
+      augmentedPoints.push({
+        ...p,
+        label: nextLabel,
+        class_name: "urban"
+      });
+    });
+    if (urbanPoints.length > 0) {
+      nextLabel++;
+      addedCommonClasses = true;
+    }
+  }
+  const hasWater = existingClasses.has("water") || existingClasses.has("lake") || existingClasses.has("river") || existingClasses.has("wetland");
+  if (!hasWater) {
+    const waterPoints = [
+      ...stateName === "Iowa" ? [
+        { lat: 41.0585, lon: -91.5955 },
+        // Mississippi River
+        { lat: 42.0458, lon: -93.3688 },
+        // Clear Lake
+        { lat: 42.4039, lon: -94.7014 },
+        // Storm Lake
+        { lat: 41.3911, lon: -91.0432 }
+        // Coralville Lake
+      ] : [],
+      ...stateName === "California" ? [
+        { lat: 39.0968, lon: -120.0324 },
+        // Lake Tahoe
+        { lat: 33.2175, lon: -115.6139 },
+        // Salton Sea
+        { lat: 37.9993, lon: -122.1339 },
+        // San Francisco Bay
+        { lat: 36.9806, lon: -121.8814 }
+        // Monterey Bay
+      ] : [],
+      ...stateName === "Texas" ? [
+        { lat: 30.4064, lon: -98.1145 },
+        // Lake Travis
+        { lat: 29.5964, lon: -95.0565 },
+        // Galveston Bay
+        { lat: 32.7714, lon: -97.8056 },
+        // Lake Worth
+        { lat: 31.0969, lon: -97.7171 }
+        // Belton Lake
+      ] : [],
+      ...stateName === "Kansas" ? [
+        { lat: 38.7022, lon: -99.3236 },
+        // Cedar Bluff Reservoir
+        { lat: 39.0558, lon: -96.5864 },
+        // Tuttle Creek Lake
+        { lat: 37.2739, lon: -97.8684 },
+        // Cheney Reservoir
+        { lat: 38.3714, lon: -95.7308 }
+        // Pomona Lake
+      ] : [],
+      ...stateName === "Nebraska" ? [
+        { lat: 41.2044, lon: -96.0819 },
+        // Missouri River
+        { lat: 41.1756, lon: -100.7715 },
+        // Lake McConaughy
+        { lat: 40.7719, lon: -96.8867 },
+        // Branched Oak Lake
+        { lat: 42.7614, lon: -97.3584 }
+        // Lewis and Clark Lake
+      ] : [],
+      ...stateName === "Illinois" ? [
+        { lat: 41.8919, lon: -87.6051 },
+        // Lake Michigan
+        { lat: 39, lon: -90.6731 },
+        // Mississippi River
+        { lat: 37.2289, lon: -88.727 },
+        // Rend Lake
+        { lat: 40.6389, lon: -89.3981 }
+        // Illinois River
+      ] : []
+    ];
+    waterPoints.forEach((p) => {
+      augmentedPoints.push({
+        ...p,
+        label: nextLabel,
+        class_name: "water"
+      });
+    });
+    if (waterPoints.length > 0) {
+      nextLabel++;
+      addedCommonClasses = true;
+    }
+  }
+  const hasVegetation = existingClasses.has("forest") || existingClasses.has("grassland") || existingClasses.has("pasture") || existingClasses.has("woods") || existingClasses.has("natural_vegetation");
+  if (!hasVegetation) {
+    const vegetationPoints = [
+      ...stateName === "Iowa" ? [
+        { lat: 42.4313, lon: -90.7093 },
+        // Yellow River State Forest
+        { lat: 41.9908, lon: -91.6806 }
+        // Wapsipinicon State Park
+      ] : [],
+      ...stateName === "California" ? [
+        { lat: 37.8651, lon: -119.5383 },
+        // Yosemite
+        { lat: 41.2132, lon: -124.0046 }
+        // Redwood Forest
+      ] : [],
+      ...stateName === "Texas" ? [
+        { lat: 30.25, lon: -103.5 },
+        // Big Bend grassland
+        { lat: 30.6077, lon: -96.3344 }
+        // Brazos Valley
+      ] : [],
+      ...stateName === "Kansas" ? [
+        { lat: 38.7839, lon: -99.3185 },
+        // Prairie grassland
+        { lat: 37.7528, lon: -100.0217 }
+        // Cimarron National Grassland
+      ] : [],
+      ...stateName === "Nebraska" ? [
+        { lat: 42.8136, lon: -103.0019 },
+        // Nebraska National Forest
+        { lat: 41.9047, lon: -100.5089 }
+        // Sandhills grassland
+      ] : [],
+      ...stateName === "Illinois" ? [
+        { lat: 37.5006, lon: -88.9995 },
+        // Shawnee National Forest
+        { lat: 41.8661, lon: -88.1436 }
+        // Morton Arboretum
+      ] : []
+    ];
+    vegetationPoints.forEach((p) => {
+      augmentedPoints.push({
+        ...p,
+        label: nextLabel,
+        class_name: "natural_vegetation"
+      });
+    });
+    if (vegetationPoints.length > 0) nextLabel++;
+  }
+  return augmentedPoints;
+}
 function getDefaultClassInfo(stateName) {
   const classInfo = {
     "Iowa": {
@@ -4893,7 +5103,7 @@ async function classifyCrops(params) {
       geometry = stateFeature.geometry();
     } else {
       geometry = await parseAoi(region);
-      stateName = "custom";
+      stateName = "default";
     }
     let trainingPoints = trainingData;
     if (!trainingPoints) {
@@ -4902,7 +5112,36 @@ async function classifyCrops(params) {
         throw new Error(`No default training data available for ${stateName}. Please provide custom training data.`);
       }
     }
-    const classInfo = classDefinitions && palette ? { definitions: classDefinitions, palette } : getDefaultClassInfo(stateName);
+    trainingPoints = augmentWithCommonSenseClasses(trainingPoints, stateName);
+    let classInfo = classDefinitions && palette ? { definitions: classDefinitions, palette } : getDefaultClassInfo(stateName);
+    if (trainingPoints.length > (trainingData ? trainingData.length : 0)) {
+      const updatedDefinitions = {};
+      const updatedPalette = [];
+      const labelMap = /* @__PURE__ */ new Map();
+      trainingPoints.forEach((p) => {
+        if (!labelMap.has(p.label)) {
+          labelMap.set(p.label, p.class_name);
+        }
+      });
+      const sortedLabels = Array.from(labelMap.keys()).sort((a, b) => a - b);
+      sortedLabels.forEach((label, index) => {
+        updatedDefinitions[label.toString()] = labelMap.get(label) || `class_${label}`;
+        const className = labelMap.get(label) || "";
+        if (className.includes("corn")) updatedPalette.push("FFD700");
+        else if (className.includes("soybean")) updatedPalette.push("228B22");
+        else if (className.includes("wheat")) updatedPalette.push("D2691E");
+        else if (className.includes("cotton")) updatedPalette.push("F5DEB3");
+        else if (className.includes("urban")) updatedPalette.push("DC143C");
+        else if (className.includes("water")) updatedPalette.push("4682B4");
+        else if (className.includes("vegetation") || className.includes("forest")) updatedPalette.push("006400");
+        else if (className.includes("grassland")) updatedPalette.push("90EE90");
+        else updatedPalette.push(["FF0000", "00FF00", "0000FF", "FFFF00", "FF00FF"][index % 5]);
+      });
+      classInfo = {
+        definitions: updatedDefinitions,
+        palette: updatedPalette
+      };
+    }
     const trainingFeaturesCode = trainingPoints.map(
       (p) => `ee.Feature(ee.Geometry.Point([${p.lon}, ${p.lat}]), {
         'label': ${p.label},
@@ -5088,12 +5327,7 @@ async function classifyCrops(params) {
         url: mapUrl,
         tileUrl,
         center,
-        visualization: visParams,
-        legend: Object.entries(classInfo.definitions).map(([value, name]) => ({
-          value: parseInt(value),
-          name,
-          color: classInfo.palette[parseInt(value) - 1]
-        }))
+        visualization: visParams
       };
     }
     return result;
@@ -5153,41 +5387,66 @@ var init_crop_classification = __esm({
       class_name: z7.string()
     });
     CropClassificationSchema = z7.object({
-      operation: z7.enum(["classify", "train", "evaluate", "export"]),
+      operation: z7.enum(["classify", "train", "evaluate", "export"]).describe("Operation type: classify (full classification), train (model only), evaluate (accuracy metrics), export (save results)"),
       // Region parameters
-      region: z7.string().describe("State name or geometry for classification area"),
+      region: z7.string().describe("US state name (e.g., Iowa, California) or geometry. Supported states: Iowa, California, Texas, Kansas, Nebraska, Illinois"),
       // Time parameters
-      startDate: z7.string().optional().describe("Start date for imagery (YYYY-MM-DD)"),
-      endDate: z7.string().optional().describe("End date for imagery (YYYY-MM-DD)"),
+      startDate: z7.string().optional().describe("Start date for imagery in YYYY-MM-DD format. Default: 6 months ago"),
+      endDate: z7.string().optional().describe("End date for imagery in YYYY-MM-DD format. Default: current date"),
       // Training data
       trainingData: z7.union([
         z7.array(TrainingPointSchema),
         z7.string()
         // Path to training data file
-      ]).optional().describe("Training points with coordinates and labels"),
+      ]).optional().describe("Optional custom training points. If not provided, uses default training data for the specified state"),
       // Classification parameters
-      classifier: z7.enum(["randomForest", "svm", "cart", "naiveBayes"]).optional(),
-      numberOfTrees: z7.number().optional().describe("Number of trees for Random Forest"),
-      seed: z7.number().optional().describe("Random seed for reproducibility"),
+      classifier: z7.enum(["randomForest", "svm", "cart", "naiveBayes"]).optional().describe("Machine learning classifier. Default: randomForest (best accuracy)"),
+      numberOfTrees: z7.number().optional().describe("Number of trees for Random Forest classifier (10-500). Default: 50"),
+      seed: z7.number().optional().describe("Random seed for reproducibility. Default: 42"),
       // Feature selection
-      features: z7.array(z7.string()).optional().describe("Bands and indices to use"),
-      includeIndices: z7.boolean().optional().describe("Include vegetation indices"),
+      features: z7.array(z7.string()).optional().describe("Specific bands and indices to use. Default: all available bands"),
+      includeIndices: z7.boolean().optional().describe("Include vegetation indices (NDVI, EVI, SAVI, NDWI). Default: true"),
       // Visualization
-      createMap: z7.boolean().optional().describe("Create interactive map"),
-      palette: z7.array(z7.string()).optional().describe("Color palette for classes"),
+      createMap: z7.boolean().optional().describe("Create interactive web map (slower for large areas). Default: false. Set to false for faster processing"),
+      palette: z7.array(z7.string()).optional().describe("Color palette for classes. Default: automatic based on class count"),
       // Class definitions
-      classDefinitions: z7.record(z7.string(), z7.string()).optional().describe("Mapping of class numbers to names"),
+      classDefinitions: z7.record(z7.string(), z7.string()).optional().describe("Mapping of class numbers to names. Default: uses training data class names"),
       // Additional options
-      scale: z7.number().optional(),
-      cloudCoverMax: z7.number().optional(),
-      spatialFiltering: z7.boolean().optional(),
-      kernelSize: z7.number().optional()
+      scale: z7.number().optional().describe("Pixel resolution in meters (10-1000). Default: 30 for Landsat/Sentinel"),
+      cloudCoverMax: z7.number().optional().describe("Maximum cloud cover percentage (0-100). Default: 20"),
+      spatialFiltering: z7.boolean().optional().describe("Apply spatial filtering to reduce noise. Default: false"),
+      kernelSize: z7.number().optional().describe("Kernel size for spatial filtering (1-9). Default: 3")
     });
     register({
       name: "crop_classification",
-      description: "Build, train, and visualize crop classification models using Earth Engine. Supports multiple states with default training data or custom training points.",
+      description: `Machine learning crop and land cover classification using satellite imagery. 
+    SUPPORTED REGIONS: Iowa, California, Texas, Kansas, Nebraska, Illinois (or custom coordinates).
+    FEATURES: Automatic cloud masking, vegetation indices (NDVI, EVI, SAVI, NDWI), multiple classifiers (Random Forest, SVM, CART, Naive Bayes).
+    OUTPUTS: Classification map, accuracy metrics, optional interactive web map.
+    PERFORMANCE: For faster processing, set createMap=false. Large regions may timeout with map creation enabled.
+    DEFAULT CLASSES by state: Iowa (corn, soybean, wheat, urban, water), California (almonds, grapes, citrus, rice, forest, urban, desert, water), Texas (cotton, wheat, corn, sorghum, grassland, urban).`,
       input: CropClassificationSchema,
-      output: z7.any(),
+      output: z7.object({
+        success: z7.boolean(),
+        operation: z7.string(),
+        classificationKey: z7.string().optional(),
+        classifierKey: z7.string().optional(),
+        message: z7.string(),
+        region: z7.string(),
+        dateRange: z7.object({
+          start: z7.string(),
+          end: z7.string()
+        }),
+        classifier: z7.string(),
+        numberOfClasses: z7.number(),
+        classDefinitions: z7.record(z7.string(), z7.string()),
+        features: z7.array(z7.string()),
+        trainingPoints: z7.number(),
+        statistics: z7.any().optional(),
+        mapUrl: z7.string().optional(),
+        tileUrl: z7.string().optional(),
+        mapSessionId: z7.string().optional()
+      }),
       handler: execute
     });
   }
