@@ -21,6 +21,7 @@ const MapToolSchema = z.object({
   layers: z.array(z.object({
     name: z.string().describe('REQUIRED - Display name for this layer (e.g., "Sentinel-2 January 2025")'),
     input: z.string().optional().describe('REQUIRED - The composite/model key to visualize (e.g., composite_1234567890). Must be provided for each layer'),
+    compositeKey: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
     tileUrl: z.string().optional().describe('INTERNAL USE - Leave empty, will be generated automatically'),
     bands: z.array(z.string()).optional().describe('RECOMMENDED - Band names to display. For Sentinel-2 RGB use ["B4","B3","B2"]. For indices use single band like ["NDVI"]'),
     visible: z.boolean().optional().describe('OPTIONAL - Set to false to hide layer initially. Default: true'),
@@ -29,7 +30,15 @@ const MapToolSchema = z.object({
     min: z.number().optional().describe('REQUIRED for RGB - Minimum value for visualization. For Sentinel-2: 0'),
     max: z.number().optional().describe('REQUIRED for RGB - Maximum value for visualization. For Sentinel-2: 3000, for indices: 1'),
     palette: z.array(z.string()).optional().describe('OPTIONAL - Color palette for single-band visualizations (e.g., ["blue","white","green"] for NDVI)'),
-    gamma: z.number().optional().describe('OPTIONAL - Gamma correction for better contrast. Default: 1.4')
+    gamma: z.number().optional().describe('OPTIONAL - Gamma correction for better contrast. Default: 1.4'),
+    // Additional aliases that Claude might use
+    visualizationParams: z.object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+      bands: z.array(z.string()).optional(),
+      palette: z.array(z.string()).optional(),
+      gamma: z.number().optional()
+    }).optional().describe('ALIAS for visParams - Visualization parameters object')
   })).optional().describe('REQUIRED for create - Array of layers to display on the map. Each layer needs its own input key and visualization parameters'),
   
   // For single layer (backward compatibility)
@@ -262,13 +271,16 @@ async function createMap(params: any) {
           continue;
         }
         
-        // Get the image for this layer (either from layer.input or use primary image)
+        // Get the image for this layer (either from layer.input/compositeKey or use primary image)
         let layerImage;
         let layerDatasetType = datasetType;
         
-        if (layer.input) {
+        // Support both 'input' and 'compositeKey' field names
+        const layerInputKey = layer.input || layer.compositeKey;
+        
+        if (layerInputKey) {
           // Layer has its own input source
-          layerImage = compositeStore[layer.input];
+          layerImage = compositeStore[layerInputKey];
           if (!layerImage) {
             console.log(`[Map] No image found in store for: ${layer.input}, attempting direct creation...`);
             
@@ -342,8 +354,12 @@ async function createMap(params: any) {
           console.log(`[Map] Auto-detected bands for layer ${layer.name}: ${layerBands}`);
         }
         // Normalize visualization parameters based on dataset
-        // Handle both nested visParams and flattened parameters (min, max, palette, gamma)
-        const layerVisParams = layer.visParams || {};
+        // Handle visParams, visualizationParams, and flattened parameters
+        const layerVisParams = layer.visParams || layer.visualizationParams || {};
+        // If visualizationParams has bands, extract them
+        if (layer.visualizationParams?.bands && !layerBands) {
+          layerBands = layer.visualizationParams.bands;
+        }
         const flattenedVis = {
           min: layer.min !== undefined ? layer.min : layerVisParams.min,
           max: layer.max !== undefined ? layer.max : layerVisParams.max,
@@ -635,8 +651,7 @@ async function handler(params: any) {
 register({
   name: 'earth_engine_map',
   description: 'Interactive Map Viewer - create, list, delete interactive web maps',
-  input: MapToolSchema,
-  output: z.any(),
+  inputSchema: MapToolSchema,
   handler
 });
 
