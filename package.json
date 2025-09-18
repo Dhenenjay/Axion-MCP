@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "axion-mcp",
   "version": "1.0.0",
   "description": "Advanced Earth Engine MCP Server",
@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "next start -p \\",
     "lint": "next lint"
   },
   "dependencies": {
