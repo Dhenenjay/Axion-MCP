@@ -33,13 +33,9 @@ const serviceAccount = JSON.parse(serviceAccountKey);
 const renderConfig = {
   type: 'web_service',
   name: SERVICE_NAME,
-  ownerId: null, // Will be set automatically
-  repo: {
-    provider: 'github',
-    repoUrl: GITHUB_REPO,
-    branch: 'main',
-    autoDeploy: true
-  },
+  repo: GITHUB_REPO,
+  branch: 'main',
+  autoDeploy: 'yes',
   plan: 'free',
   region: 'oregon',
   envVars: [

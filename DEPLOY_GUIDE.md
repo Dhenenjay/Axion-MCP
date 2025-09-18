@@ -26,7 +26,7 @@ https://axion-mcp.onrender.com
       "args": [
         "-y",
         "@vercel/mcp-bridge",
-        "https://axion-mcp.onrender.com/api/mcp/sse"
+        "https://axion-mcp.onrender.com/api/mcp/sse-stream"
       ],
       "env": {}
     }
@@ -44,7 +44,7 @@ https://axion-mcp.onrender.com
 
 3. **Add a new server with:**
    - Name: `axion-mcp`
-   - URL: `https://axion-mcp.onrender.com/api/mcp/sse`
+   - URL: `https://axion-mcp.onrender.com/api/mcp/sse-stream`
    - Type: `SSE`
 
 ## 📊 Available Super Tools
