@@ -137,6 +137,7 @@ async function getInput(input: any) {
  */
 async function createComposite(params: any) {
   const { 
+    input,  // Can be a pre-filtered dataset string or reference
     datasetId, 
     startDate, 
     endDate, 
@@ -145,30 +146,94 @@ async function createComposite(params: any) {
     cloudCoverMax = 20
   } = params;
   
-  if (!datasetId) throw new Error('datasetId required for composite operation');
-  if (!startDate || !endDate) throw new Error('startDate and endDate required for composite');
+  // Check for either input or datasetId
+  if (!input && !datasetId) throw new Error('Either input or datasetId required for composite operation');
   
-  // Create collection
-  let collection = new ee.ImageCollection(datasetId);
+  // For composite, we need dates unless input already contains filtered data
+  // If input is provided, dates are optional (might already be filtered)
+  if (!input && (!startDate || !endDate)) {
+    throw new Error('startDate and endDate required when using datasetId');
+  }
   
-  // Apply date filter
-  collection = collection.filterDate(startDate, endDate);
+  // Create collection - handle both input and datasetId
+  let collection;
+  if (input) {
+    // Input might be a pre-filtered dataset or a reference
+    // Parse the input to extract dataset information if it's a descriptive string
+    if (typeof input === 'string' && input.includes('filtered for')) {
+      // Extract dataset ID from descriptive string like "COPERNICUS/S2_SR_HARMONIZED filtered for..."
+      const datasetMatch = input.match(/^([A-Z0-9_/]+)\s+filtered/);
+      const datasetFromInput = datasetMatch ? datasetMatch[1] : null;
+      
+      // Extract dates if provided in the input string
+      const dateMatch = input.match(/(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})/);
+      const extractedStartDate = dateMatch ? dateMatch[1] : startDate;
+      const extractedEndDate = dateMatch ? dateMatch[2] : endDate;
+      
+      // Extract region if provided in the input string
+      const regionMatch = input.match(/for\s+([^\d]+?)\s+\d{4}-/);
+      const extractedRegion = regionMatch ? regionMatch[1].trim() : region;
+      
+      if (datasetFromInput) {
+        collection = new ee.ImageCollection(datasetFromInput);
+        // Apply filters based on extracted or provided parameters
+        if (extractedStartDate && extractedEndDate) {
+          collection = collection.filterDate(extractedStartDate, extractedEndDate);
+        }
+        if (extractedRegion) {
+          const geometry = await parseAoi(extractedRegion);
+          collection = collection.filterBounds(geometry);
+        }
+      } else {
+        // Try to use input as direct collection reference
+        collection = await getInput(input);
+      }
+    } else {
+      // Use input as is (might be a stored reference or direct collection)
+      collection = await getInput(input);
+    }
+  } else {
+    // Use datasetId directly
+    collection = new ee.ImageCollection(datasetId);
+    // Apply date filter if we have dates
+    if (startDate && endDate) {
+      collection = collection.filterDate(startDate, endDate);
+    }
+  }
   
-  // Apply region filter if provided
-  if (region) {
-    const geometry = await parseAoi(region);
+  // Now handle region and additional filtering
+  let finalRegion = region;
+  let finalStartDate = startDate;
+  let finalEndDate = endDate;
+  
+  // If we extracted parameters from input, use those
+  if (input && typeof input === 'string' && input.includes('filtered for')) {
+    const regionMatch = input.match(/for\s+([^\d]+?)\s+\d{4}-/);
+    if (regionMatch) finalRegion = regionMatch[1].trim();
+    
+    const dateMatch = input.match(/(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      finalStartDate = dateMatch[1];
+      finalEndDate = dateMatch[2];
+    }
+  }
+  
+  // Apply region filter if we have one
+  if (finalRegion) {
+    const geometry = await parseAoi(finalRegion);
     collection = collection.filterBounds(geometry);
     
     // Also clip the final composite to the region
     let composite;
     
     // Apply cloud filter for optical imagery
-    if (datasetId.includes('COPERNICUS/S2') || datasetId.includes('LANDSAT')) {
-      const cloudProp = datasetId.includes('COPERNICUS/S2') ? 'CLOUDY_PIXEL_PERCENTAGE' : 'CLOUD_COVER';
+    const datasetToCheck = input ? (input.match(/^([A-Z0-9_/]+)\s+filtered/)?.[1] || datasetId) : datasetId;
+    if (datasetToCheck && (datasetToCheck.includes('COPERNICUS/S2') || datasetToCheck.includes('LANDSAT'))) {
+      const cloudProp = datasetToCheck.includes('COPERNICUS/S2') ? 'CLOUDY_PIXEL_PERCENTAGE' : 'CLOUD_COVER';
       collection = collection.filter(ee.Filter.lt(cloudProp, cloudCoverMax));
       
       // Apply cloud masking for cleaner composite
-      if (datasetId.includes('COPERNICUS/S2')) {
+      if (datasetToCheck && datasetToCheck.includes('COPERNICUS/S2')) {
         collection = collection.map((img: any) => {
           const qa = img.select('QA60');
           const cloudBitMask = 1 << 10;
@@ -215,11 +280,11 @@ async function createComposite(params: any) {
     
     // Use the global store helper
     addComposite(compositeKey, composite, {
-      datasetId,
+      datasetId: datasetToCheck || datasetId,
       compositeType,
-      startDate,
-      endDate,
-      region
+      startDate: finalStartDate,
+      endDate: finalEndDate,
+      region: finalRegion
     });
     
     return {
@@ -227,9 +292,9 @@ async function createComposite(params: any) {
       operation: 'composite',
       compositeType,
       compositeKey,
-      message: `Created ${compositeType} composite from ${datasetId}`,
-      dateRange: { startDate, endDate },
-      region: typeof region === 'string' ? region : 'custom geometry',
+      message: `Created ${compositeType} composite from ${input || datasetId}`,
+      dateRange: { startDate: finalStartDate, endDate: finalEndDate },
+      region: typeof finalRegion === 'string' ? finalRegion : 'custom geometry',
       cloudCoverMax,
       result: composite,
       nextSteps: 'Use this compositeKey with thumbnail operation to visualize'
@@ -239,8 +304,9 @@ async function createComposite(params: any) {
     let composite;
     
     // Apply cloud filter
-    if (datasetId.includes('COPERNICUS/S2') || datasetId.includes('LANDSAT')) {
-      const cloudProp = datasetId.includes('COPERNICUS/S2') ? 'CLOUDY_PIXEL_PERCENTAGE' : 'CLOUD_COVER';
+    const datasetToCheck = input ? (input.match(/^([A-Z0-9_/]+)\s+filtered/)?.[1] || datasetId) : datasetId;
+    if (datasetToCheck && (datasetToCheck.includes('COPERNICUS/S2') || datasetToCheck.includes('LANDSAT'))) {
+      const cloudProp = datasetToCheck.includes('COPERNICUS/S2') ? 'CLOUDY_PIXEL_PERCENTAGE' : 'CLOUD_COVER';
       collection = collection.filter(ee.Filter.lt(cloudProp, cloudCoverMax));
     }
     
@@ -268,10 +334,10 @@ async function createComposite(params: any) {
     
     // Use the global store helper
     addComposite(compositeKey, composite, {
-      datasetId,
+      datasetId: datasetToCheck || datasetId,
       compositeType,
-      startDate,
-      endDate
+      startDate: finalStartDate || startDate,
+      endDate: finalEndDate || endDate
     });
     
     return {
@@ -1599,11 +1665,23 @@ async function handler(params: any) {
   try {
     switch (operation) {
       case 'composite':
-        if (!params?.datasetId) {
-          return { success: false, operation, error: 'datasetId is required for composite', suggestion: 'Provide datasetId, startDate, endDate, and region (optional)' };
+        // Check for either input or datasetId
+        if (!params?.input && !params?.datasetId) {
+          return { 
+            success: false, 
+            operation, 
+            error: 'Either input or datasetId is required for composite', 
+            suggestion: 'Provide either: 1) input with filtered data, or 2) datasetId with startDate and endDate' 
+          };
         }
-        if (!params?.startDate || !params?.endDate) {
-          return { success: false, operation, error: 'startDate and endDate are required for composite' };
+        // Only require dates if using datasetId without input
+        if (!params?.input && (!params?.startDate || !params?.endDate)) {
+          return { 
+            success: false, 
+            operation, 
+            error: 'startDate and endDate are required when using datasetId',
+            suggestion: 'When using datasetId, also provide startDate and endDate'
+          };
         }
         return await createComposite(params);
         
