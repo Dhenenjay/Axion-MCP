@@ -1,12 +1,12 @@
 {
   "name": "axion-mcp",
   "version": "1.0.0",
-  "description": "Advanced Earth Engine MCP Server",
+  "description": "Earth Engine MCP Server",
   "private": false,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p \\",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
