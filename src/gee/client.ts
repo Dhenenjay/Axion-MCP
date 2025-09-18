@@ -10,9 +10,23 @@ export async function initEarthEngineWithSA(){
   
   let sa;
   
-  // Try to load from file path first (preferred method for public users)
-  const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (keyPath) {
+  // First try to load from JSON environment variable (for Render deployment)
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    try {
+      sa = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+      console.log('Loaded service account from environment variable');
+      
+      // Auto-set project ID and email for other parts of the app
+      process.env.GCP_PROJECT_ID = sa.project_id;
+      process.env.GCP_SERVICE_ACCOUNT_EMAIL = sa.client_email;
+    } catch (error) {
+      console.error('Could not parse GOOGLE_APPLICATION_CREDENTIALS_JSON:', error);
+      throw new Error('Invalid service account JSON in environment variable');
+    }
+  } 
+  // Then try to load from file path (for local development)
+  else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     try {
       const keyContent = await fs.readFile(keyPath, 'utf-8');
       sa = JSON.parse(keyContent);
@@ -34,7 +48,7 @@ export async function initEarthEngineWithSA(){
     // Fall back to encoded JSON in env variable
     const decoded = decodeSaJson();
     if (decoded.useFile) {
-      throw new Error('GOOGLE_APPLICATION_CREDENTIALS is not set. Please set it to your service account key file path.');
+      throw new Error('No service account credentials found. Set GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS_JSON.');
     }
     sa = decoded;
   }

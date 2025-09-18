@@ -1,0 +1,31 @@
+services:
+  # Main Next.js application with MCP SSE bridge
+  - type: web
+    name: axion-mcp-earth-engine
+    runtime: node
+    region: oregon # You can change this to your preferred region
+    plan: free # Start with free tier, upgrade as needed
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /opt/render/project/src/gee-service-account.json
+      - key: GCP_PROJECT_ID
+        value: axion-orbital
+      - key: GCP_SERVICE_ACCOUNT_EMAIL
+        value: mcp-963@axion-orbital.iam.gserviceaccount.com
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # Will be set to the service URL after deployment
+      # Disable telemetry for production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: 1
+    
+    # Health check to ensure the service stays alive
+    healthCheckPath: /api/health
+    
+    # Auto-deploy on push to main branch
+    autoDeploy: true

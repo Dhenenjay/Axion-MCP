@@ -6,9 +6,11 @@
     "scripts":  {
                     "setup:check":  "node setup-check.js",
                     "dev":  "tsx watch src/index.ts",
-                    "build":  "tsup src/index.ts --format esm --dts --clean",
+                    "build":  "next build",
+                    "build:mcp":  "tsup src/index.ts --format esm --dts --clean",
                     "build:next":  "next build",
-                    "start":  "node dist/index.mjs",
+                    "start":  "next start -p ${PORT:-3000}",
+                    "start:mcp":  "node dist/index.mjs",
                     "start:next":  "next start",
                     "lint":  "next lint",
                     "test-advanced-earthengine":  "node scripts/test-advanced-earthengine.mjs",
