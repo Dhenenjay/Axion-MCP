@@ -9,33 +9,28 @@ import ee from '@google/earthengine';
 import { getComposite, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMapSessions, addMapSession } from '../../../lib/global-store';
 import { v4 as uuidv4 } from 'uuid';
 
-// Schema for the map tool
+// Schema for the map tool - with detailed descriptions for MCP clients
 const MapToolSchema = z.object({
-  operation: z.enum(['create', 'list', 'delete']).describe('Map operation'),
+  operation: z.enum(['create', 'list', 'delete']).describe('Map operation: create to make a new map, list to see existing maps, delete to remove a map'),
   
   // For create operation
-  input: z.string().optional().describe('Model key or composite key to visualize'),
-  region: z.string().optional().describe('Region name for the map'),
+  input: z.string().optional().describe('OPTIONAL - Primary composite/model key (e.g., composite_1234567890). If provided, will be used as default for all layers unless they specify their own input'),
+  region: z.string().optional().describe('OPTIONAL - Region name for the map center (e.g., "Los Angeles" or "California")'),
+  
+  // IMPORTANT: layers array is the primary way to specify what to visualize
   layers: z.array(z.object({
-    name: z.string().describe('Layer name'),
-    input: z.string().optional().describe('Input key for this specific layer'),
-    tileUrl: z.string().optional().describe('Direct tile URL for this layer'),
-    bands: z.array(z.string()).optional().describe('Bands to visualize'),
-    visible: z.boolean().optional().describe('Layer visibility'),
-    opacity: z.number().optional().describe('Layer opacity'),
-    visParams: z.object({
-      min: z.number().optional(),
-      max: z.number().optional(),
-      palette: z.array(z.string()).optional(),
-      gamma: z.number().optional()
-    }).optional(),
-    visualization: z.object({
-      min: z.number().optional(),
-      max: z.number().optional(),
-      palette: z.array(z.string()).optional(),
-      gamma: z.number().optional()
-    }).optional()
-  })).optional().describe('Multiple layers configuration'),
+    name: z.string().describe('REQUIRED - Display name for this layer (e.g., "Sentinel-2 January 2025")'),
+    input: z.string().optional().describe('REQUIRED - The composite/model key to visualize (e.g., composite_1234567890). Must be provided for each layer'),
+    tileUrl: z.string().optional().describe('INTERNAL USE - Leave empty, will be generated automatically'),
+    bands: z.array(z.string()).optional().describe('RECOMMENDED - Band names to display. For Sentinel-2 RGB use ["B4","B3","B2"]. For indices use single band like ["NDVI"]'),
+    visible: z.boolean().optional().describe('OPTIONAL - Set to false to hide layer initially. Default: true'),
+    opacity: z.number().optional().describe('OPTIONAL - Layer opacity from 0 to 1. Default: 1'),
+    // IMPORTANT: Just use direct min/max parameters, not nested in visParams
+    min: z.number().optional().describe('REQUIRED for RGB - Minimum value for visualization. For Sentinel-2: 0'),
+    max: z.number().optional().describe('REQUIRED for RGB - Maximum value for visualization. For Sentinel-2: 3000, for indices: 1'),
+    palette: z.array(z.string()).optional().describe('OPTIONAL - Color palette for single-band visualizations (e.g., ["blue","white","green"] for NDVI)'),
+    gamma: z.number().optional().describe('OPTIONAL - Gamma correction for better contrast. Default: 1.4')
+  })).optional().describe('REQUIRED for create - Array of layers to display on the map. Each layer needs its own input key and visualization parameters'),
   
   // For single layer (backward compatibility)
   bands: z.array(z.string()).optional().describe('Bands to visualize'),
@@ -347,7 +342,19 @@ async function createMap(params: any) {
           console.log(`[Map] Auto-detected bands for layer ${layer.name}: ${layerBands}`);
         }
         // Normalize visualization parameters based on dataset
-        const rawVis = { ...visParams, ...layer.visParams };
+        // Handle both nested visParams and flattened parameters (min, max, palette, gamma)
+        const layerVisParams = layer.visParams || {};
+        const flattenedVis = {
+          min: layer.min !== undefined ? layer.min : layerVisParams.min,
+          max: layer.max !== undefined ? layer.max : layerVisParams.max,
+          palette: layer.palette || layerVisParams.palette,
+          gamma: layer.gamma !== undefined ? layer.gamma : layerVisParams.gamma
+        };
+        // Remove undefined values
+        Object.keys(flattenedVis).forEach(key => 
+          flattenedVis[key] === undefined && delete flattenedVis[key]
+        );
+        const rawVis = { ...visParams, ...layerVisParams, ...flattenedVis };
         const layerVis = normalizeVisParams(rawVis, layerBands, layerDatasetType);
         
         console.log(`[Map] Layer ${layer.name} - input: ${layer.input || input}, bands: ${layerBands}, vis:`, layerVis);

@@ -14,27 +14,38 @@ import { optimizer } from '../../../utils/ee-optimizer';
 // Use the global stores directly from imports - DO NOT redefine them!
 // The compositeStore and compositeMetadata are imported from global-store above
 
-// Main schema for the consolidated tool
+// Main schema for the consolidated tool - with detailed descriptions for MCP clients
 const ProcessToolSchema = z.object({
-  operation: z.enum(['clip', 'mask', 'index', 'analyze', 'composite', 'terrain', 'resample', 'fcc', 'model']),
+  operation: z.enum(['clip', 'mask', 'index', 'analyze', 'composite', 'terrain', 'resample', 'fcc', 'model'])
+    .describe('REQUIRED - Operation to perform: composite (create cloud-free image), index (calculate NDVI etc.), model (run analysis models)'),
   
-  // Common params
-  input: z.any().optional(),
-  datasetId: z.string().optional(),
-  region: z.any().optional(),
-  scale: z.number().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  // Common params - IMPORTANT: Use either input OR datasetId, not both
+  input: z.any().optional()
+    .describe('ALTERNATIVE to datasetId - Can be: 1) A composite key (e.g., composite_1234567890), 2) A descriptive string (e.g., "COPERNICUS/S2_SR_HARMONIZED filtered for Los Angeles 2025-01-01 to 2025-01-31")'),
+  datasetId: z.string().optional()
+    .describe('ALTERNATIVE to input - Earth Engine dataset ID (e.g., "COPERNICUS/S2_SR_HARMONIZED"). Use with startDate and endDate'),
+  region: z.any().optional()
+    .describe('RECOMMENDED - Region for processing (e.g., "Los Angeles" or "California" or coordinates)'),
+  scale: z.number().optional()
+    .describe('OPTIONAL - Processing scale in meters. Default: 30 for Sentinel/Landsat, 100 for models'),
+  startDate: z.string().optional()
+    .describe('REQUIRED with datasetId - Start date in YYYY-MM-DD format (e.g., "2025-01-01")'),
+  endDate: z.string().optional()
+    .describe('REQUIRED with datasetId - End date in YYYY-MM-DD format (e.g., "2025-01-31")'),
   
   // Mask operation params
   maskType: z.enum(['clouds', 'quality', 'water', 'shadow']).optional(),
   threshold: z.number().optional(),
   
-  // Index operation params
-  indexType: z.enum(['NDVI', 'NDWI', 'NDBI', 'EVI', 'SAVI', 'MNDWI', 'BSI', 'NDSI', 'NBR', 'custom']).optional(),
-  redBand: z.string().optional(),
-  nirBand: z.string().optional(),
-  formula: z.string().optional(),
+  // Index operation params  
+  indexType: z.enum(['NDVI', 'NDWI', 'NDBI', 'EVI', 'SAVI', 'MNDWI', 'BSI', 'NDSI', 'NBR', 'custom']).optional()
+    .describe('REQUIRED for index - Type of vegetation/spectral index to calculate. NDVI for vegetation, NDWI for water, NDBI for built-up areas'),
+  redBand: z.string().optional()
+    .describe('OPTIONAL - Custom red band name for index calculation (auto-detected from dataset)'),
+  nirBand: z.string().optional()
+    .describe('OPTIONAL - Custom NIR band name for index calculation (auto-detected from dataset)'),
+  formula: z.string().optional()
+    .describe('OPTIONAL - Custom formula for index calculation when indexType is "custom"'),
   
   // Analyze operation params
   analysisType: z.enum(['statistics', 'timeseries', 'change', 'zonal']).optional(),
@@ -42,8 +53,10 @@ const ProcessToolSchema = z.object({
   zones: z.any().optional(),
   
   // Composite operation params
-  compositeType: z.enum(['median', 'mean', 'max', 'min', 'mosaic', 'greenest']).optional(),
-  cloudCoverMax: z.number().optional(),
+  compositeType: z.enum(['median', 'mean', 'max', 'min', 'mosaic', 'greenest']).optional()
+    .describe('OPTIONAL for composite - Type of composite. Default: median (best for cloud-free imagery)'),
+  cloudCoverMax: z.number().optional()
+    .describe('OPTIONAL for composite - Maximum cloud cover percentage to include (0-100). Default: 20'),
   
   // Terrain operation params
   terrainType: z.enum(['elevation', 'slope', 'aspect', 'hillshade']).optional(),
