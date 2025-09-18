@@ -4,7 +4,7 @@ services:
     name: axion-mcp
     runtime: node
     region: oregon # You can change this to your preferred region
-    plan: free # Start with free tier, upgrade as needed
+    plan: pro # Using Pro plan for better performance
     buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:

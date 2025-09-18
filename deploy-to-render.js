@@ -29,20 +29,16 @@ try {
 // Parse service account to get project info
 const serviceAccount = JSON.parse(serviceAccountKey);
 
-// Render API configuration
+// Render API configuration for service creation
 const renderConfig = {
   type: 'web_service',
   name: SERVICE_NAME,
-  repo: GITHUB_REPO,
-  branch: 'main',
-  autoDeploy: 'yes',
-  plan: 'free',
-  region: 'oregon',
-  envVars: [
-    {
-      key: 'NODE_ENV',
-      value: 'production'
-    },
+  serviceDetails: {
+    env: 'node',
+    region: 'orego      {
+        key: 'NODE_ENV',
+        value: 'production'
+      },
     {
       key: 'PORT',
       value: '10000'
@@ -63,11 +59,11 @@ const renderConfig = {
       key: 'NEXT_TELEMETRY_DISABLED',
       value: '1'
     }
-  ],
-  buildCommand: 'npm install && npm run build',
-  startCommand: 'npm start',
-  healthCheckPath: '/api/health',
-  numInstances: 1
+    ],
+    repo: GITHUB_REPO,
+    branch: 'main',
+    autoDeploy: 'yes'
+  }
 };
 
 // Function to make API request
