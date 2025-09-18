@@ -1,0 +1,7 @@
+# Force LF line endings for package.json to avoid issues
+package.json text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.md text eol=lf

@@ -1,7 +1,6 @@
 {
   "name": "axion-mcp",
   "version": "1.0.0",
-  "description": "Earth Engine MCP Server",
   "private": false,
   "scripts": {
     "dev": "next dev",
