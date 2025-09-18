@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const RENDER_API_KEY = process.env.RENDER_API_KEY || 'rnd_kZQiMR6Gzvq1hkmqDDHhnJyNDHms';
-const SERVICE_NAME = 'axion-mcp-earth-engine';
+const SERVICE_NAME = 'axion-mcp';
 const GITHUB_REPO = 'https://github.com/Dhenenjay/Axion-MCP';
 
 // Read the service account key

@@ -1,7 +1,7 @@
 services:
   # Main Next.js application with MCP SSE bridge
   - type: web
-    name: axion-mcp-earth-engine
+    name: axion-mcp
     runtime: node
     region: oregon # You can change this to your preferred region
     plan: free # Start with free tier, upgrade as needed

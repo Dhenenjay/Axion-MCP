@@ -4,7 +4,7 @@
 
 Once deployed to Render, your Axion-MCP service will be publicly available at:
 ```
-https://axion-mcp-earth-engine.onrender.com
+https://axion-mcp.onrender.com
 ```
 
 ## 🔧 For Users: How to Connect
@@ -21,12 +21,12 @@ https://axion-mcp-earth-engine.onrender.com
 ```json
 {
   "mcpServers": {
-    "axion-earth-engine": {
+    "axion-mcp": {
       "command": "npx",
       "args": [
         "-y",
         "@vercel/mcp-bridge",
-        "https://axion-mcp-earth-engine.onrender.com/api/mcp/sse"
+        "https://axion-mcp.onrender.com/api/mcp/sse"
       ],
       "env": {}
     }
@@ -43,8 +43,8 @@ https://axion-mcp-earth-engine.onrender.com
 2. **Go to the MCP section**
 
 3. **Add a new server with:**
-   - Name: `axion-earth-engine`
-   - URL: `https://axion-mcp-earth-engine.onrender.com/api/mcp/sse`
+   - Name: `axion-mcp`
+   - URL: `https://axion-mcp.onrender.com/api/mcp/sse`
    - Type: `SSE`
 
 ## 📊 Available Super Tools
