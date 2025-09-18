@@ -7,9 +7,9 @@
 import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
-import { addComposite, getComposite, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '@/src/lib/global-store';
-import { optimizer } from '@/src/utils/ee-optimizer';
+import { parseAoi } from '../../../utils/geo';
+import { addComposite, getComposite, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '../../../lib/global-store';
+import { optimizer } from '../../../utils/ee-optimizer';
 
 // Use the global stores directly from imports - DO NOT redefine them!
 // The compositeStore and compositeMetadata are imported from global-store above

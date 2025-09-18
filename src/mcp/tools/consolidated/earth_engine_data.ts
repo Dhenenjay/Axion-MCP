@@ -7,9 +7,9 @@
 import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
-import { findGlobalLocation } from '@/src/utils/global-search';
-import { getCollectionInfoOptimized, optimizer } from '@/src/utils/ee-optimizer';
+import { parseAoi } from '../../../utils/geo';
+import { findGlobalLocation } from '../../../utils/global-search';
+import { getCollectionInfoOptimized, optimizer } from '../../../utils/ee-optimizer';
 
 // Main schema for the consolidated tool
 const DataToolSchema = z.object({

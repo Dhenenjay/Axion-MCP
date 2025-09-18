@@ -5,7 +5,7 @@
 
 import ee from '@google/earthengine';
 import { compositeStore } from './earth_engine_process';
-import { parseAoi } from '@/src/utils/geo';
+import { parseAoi } from '../../../utils/geo';
 
 /**
  * Simplified tile generation without optimizer timeouts

@@ -7,8 +7,8 @@
 import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
-import { optimizer } from '@/src/utils/ee-optimizer';
+import { parseAoi } from '../../../utils/geo';
+import { optimizer } from '../../../utils/ee-optimizer';
 
 // Store for composite results
 export const compositeStore: { [key: string]: any } = {};

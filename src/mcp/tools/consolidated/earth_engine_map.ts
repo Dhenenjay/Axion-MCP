@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { register } from '../../registry';
 import ee from '@google/earthengine';
-import { getComposite, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMapSessions, addMapSession } from '@/src/lib/global-store';
+import { getComposite, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMapSessions, addMapSession } from '../../../lib/global-store';
 import { v4 as uuidv4 } from 'uuid';
 
 // Schema for the map tool

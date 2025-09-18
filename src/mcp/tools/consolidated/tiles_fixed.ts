@@ -4,7 +4,7 @@
  */
 
 import ee from '@google/earthengine';
-import { globalCompositeStore as compositeStore } from '@/src/lib/global-store';
+import { globalCompositeStore as compositeStore } from '../../../lib/global-store';
 
 // Cache for map IDs to avoid recomputation
 const mapIdCache: Map<string, any> = new Map();

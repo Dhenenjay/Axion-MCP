@@ -1,6 +1,6 @@
 import ee from '@google/earthengine';
 import { register, z } from '../registry';
-import { parseAoi } from '@/src/utils/geo';
+import { parseAoi } from '../../utils/geo';
 
 register({
   name: 'clip_image_to_region',

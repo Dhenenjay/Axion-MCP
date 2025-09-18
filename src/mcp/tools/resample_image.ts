@@ -1,6 +1,6 @@
 import ee from '@google/earthengine';
 import { register, z } from '../registry';
-import { clampScale } from '@/src/utils/geo';
+import { clampScale } from '../../utils/geo';
 
 register({
   name: 'resample_image_to_resolution',

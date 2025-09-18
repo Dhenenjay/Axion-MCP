@@ -10,7 +10,7 @@ import { register } from '../../registry';
 import { Storage } from '@google-cloud/storage';
 import fs from 'fs/promises';
 import path from 'path';
-import { optimizer } from '@/src/utils/ee-optimizer';
+import { optimizer } from '../../../utils/ee-optimizer';
 import { globalCompositeStore as compositeStore } from './stores';
 
 // Main schema for the consolidated tool

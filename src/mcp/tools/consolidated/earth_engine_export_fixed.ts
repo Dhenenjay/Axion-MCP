@@ -6,9 +6,9 @@
 import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
+import { parseAoi } from '../../../utils/geo';
 import { Storage } from '@google-cloud/storage';
-import { optimizer } from '@/src/utils/ee-optimizer';
+import { optimizer } from '../../../utils/ee-optimizer';
 import { compositeStore } from './earth_engine_process_fixed';
 
 // Main schema for the consolidated tool

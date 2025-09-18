@@ -1,7 +1,7 @@
 import ee from '@google/earthengine';
 import { register, z } from '../registry';
-import { exportImageToGCS, getTaskStatus } from '@/src/gee/tasks';
-import { parseAoi } from '@/src/utils/geo';
+import { exportImageToGCS, getTaskStatus } from '../../gee/tasks';
+import { parseAoi } from '../../utils/geo';
 
 register({
   name: 'export_image_to_cloud_storage',

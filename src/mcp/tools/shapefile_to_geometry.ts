@@ -1,6 +1,6 @@
 import ee from '@google/earthengine';
 import { register, z } from '../registry';
-import { geometryCache, resolvePlaceName } from '@/src/utils/geometry-cache';
+import { geometryCache, resolvePlaceName } from '../../utils/geometry-cache';
 
 /**
  * Convert place names to Earth Engine geometry using built-in shapefiles

@@ -1,5 +1,5 @@
 import { list, get, register, z } from './registry';
-import { initEarthEngineWithSA } from '@/src/gee/client';
+import { initEarthEngineWithSA } from '../gee/client';
 
 export async function buildServer(){
   await initEarthEngineWithSA();

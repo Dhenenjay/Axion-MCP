@@ -8,14 +8,14 @@ import ee from '@google/earthengine';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
+import { parseAoi } from '../../../utils/geo';
 import { 
   addComposite, 
   getComposite, 
   globalCompositeStore as compositeStore,
   addMapSession,
   globalMapSessions as activeMaps
-} from '@/src/lib/global-store';
+} from '../../../lib/global-store';
 
 // Training point schema
 const TrainingPointSchema = z.object({

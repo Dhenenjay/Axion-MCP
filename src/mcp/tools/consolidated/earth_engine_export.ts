@@ -6,10 +6,10 @@
 import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
+import { parseAoi } from '../../../utils/geo';
 import { Storage } from '@google-cloud/storage';
-import { optimizer } from '@/src/utils/ee-optimizer';
-import { getComposite, getMetadata, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '@/src/lib/global-store';
+import { optimizer } from '../../../utils/ee-optimizer';
+import { getComposite, getMetadata, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '../../../lib/global-store';
 import { generateTilesOptimized } from './tiles_handler';
 import { generateTilesFast } from './tiles_fast';
 import { generateTilesDirect } from './tiles_direct';

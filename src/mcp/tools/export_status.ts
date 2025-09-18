@@ -1,5 +1,5 @@
 import { register, z } from '../registry';
-import { getTaskStatus } from '@/src/gee/tasks';
+import { getTaskStatus } from '../../gee/tasks';
 
 register({
   name: 'get_export_task_status',

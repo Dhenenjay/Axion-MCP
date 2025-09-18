@@ -6,7 +6,7 @@
 import ee from '@google/earthengine';
 import { z } from 'zod';
 import { register } from '../../registry';
-import { parseAoi } from '@/src/utils/geo';
+import { parseAoi } from '../../../utils/geo';
 import { compositeStore, resultsStore } from './earth_engine_process_improved';
 
 const ExportToolSchema = z.object({
