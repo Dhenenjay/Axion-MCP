@@ -4,8 +4,8 @@
  */
 
 import { NextRequest } from 'next/server';
-import { initEarthEngineWithSA } from '@/src/gee/client';
-import { callTool } from '@/src/mcp/server-consolidated';
+import { initEarthEngineWithSA } from '../../../../src/gee/client';
+import { callTool } from '../../../../src/mcp/server-consolidated';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

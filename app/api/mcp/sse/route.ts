@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { initEarthEngineWithSA } from '@/src/gee/client';
+import { initEarthEngineWithSA } from '../../../../src/gee/client';
 
 export const runtime = 'nodejs';
 

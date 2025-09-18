@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initEarthEngineWithSA } from '@/src/gee/client';
-import { list, get } from '@/src/mcp/registry';
+import { initEarthEngineWithSA } from '../../src/gee/client';
+import { list, get } from '../../src/mcp/registry';
 
 // Import all tools to register them
-import '@/src/mcp/tools';
+import '../../src/mcp/tools';
 
 let initialized = false;
 
