@@ -788,14 +788,60 @@ async function classifyCrops(params: CropClassificationParams) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
       const mapUrl = `${baseUrl}/map/${mapSessionId}`;
       
-      // Determine map center
-      const bounds = await geometry.bounds().getInfo();
-      const coords = bounds.coordinates[0];
-      const minLng = Math.min(...coords.map((c: any) => c[0]));
-      const maxLng = Math.max(...coords.map((c: any) => c[0]));
-      const minLat = Math.min(...coords.map((c: any) => c[1]));
-      const maxLat = Math.max(...coords.map((c: any) => c[1]));
-      const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+      // Determine map center and zoom based on region bounds
+      let center: [number, number];
+      let calculatedZoom: number;
+      
+      try {
+        const bounds = await geometry.bounds().getInfo();
+        const coords = bounds.coordinates[0];
+        const minLng = Math.min(...coords.map((c: any) => c[0]));
+        const maxLng = Math.max(...coords.map((c: any) => c[0]));
+        const minLat = Math.min(...coords.map((c: any) => c[1]));
+        const maxLat = Math.max(...coords.map((c: any) => c[1]));
+        center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+        
+        // Calculate appropriate zoom level based on bounds
+        const lngDiff = maxLng - minLng;
+        const latDiff = maxLat - minLat;
+        const maxDiff = Math.max(lngDiff, latDiff);
+        
+        // Better zoom calculation based on region size
+        if (maxDiff > 20) calculatedZoom = 4;      // Large country/continent
+        else if (maxDiff > 10) calculatedZoom = 5;  // Country/large state
+        else if (maxDiff > 5) calculatedZoom = 6;   // State
+        else if (maxDiff > 2) calculatedZoom = 7;   // Large region
+        else if (maxDiff > 1) calculatedZoom = 8;   // Metropolitan area
+        else if (maxDiff > 0.5) calculatedZoom = 9; // City
+        else if (maxDiff > 0.2) calculatedZoom = 10; // District
+        else calculatedZoom = 11; // Neighborhood
+        
+        console.log(`[Crop Classification] Calculated center: [${center[0].toFixed(4)}, ${center[1].toFixed(4)}], zoom: ${calculatedZoom}`);
+      } catch (e) {
+        console.error('[Crop Classification] Failed to calculate bounds, using fallback');
+        // Fallback center/zoom based on known regions
+        const regionCenters: { [key: string]: [number, number, number] } = {
+          'iowa': [-93.0977, 41.8780, 7],
+          'california': [-119.4179, 36.7783, 6],
+          'texas': [-99.9018, 31.9686, 6],
+          'kansas': [-98.3804, 38.5266, 7],
+          'nebraska': [-99.9018, 41.4925, 7],
+          'illinois': [-89.3985, 40.6331, 7],
+          'los angeles': [-118.2437, 34.0522, 10],
+          'new york': [-74.0060, 40.7128, 10],
+          'san francisco': [-122.4194, 37.7749, 11]
+        };
+        
+        const regionLower = stateName.toLowerCase();
+        if (regionCenters[regionLower]) {
+          center = [regionCenters[regionLower][0], regionCenters[regionLower][1]];
+          calculatedZoom = regionCenters[regionLower][2];
+        } else {
+          // Default to US center
+          center = [-98.5795, 39.8283];
+          calculatedZoom = 5;
+        }
+      }
       
       // No legend data needed
       
@@ -813,7 +859,7 @@ async function classifyCrops(params: CropClassificationParams) {
         }],
         metadata: {
           center: center,
-          zoom: stateName === 'California' ? 6 : 7,
+          zoom: calculatedZoom,  // Use the dynamically calculated zoom
           basemap: 'satellite'
         }
       };

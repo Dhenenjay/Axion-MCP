@@ -53,6 +53,8 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
     const basemap = mapData?.metadata?.basemap || 'satellite';
     
     console.log('MapViewer loading with data:', mapData);
+    console.log('MapViewer metadata:', mapData?.metadata);
+    console.log('Using center:', center, 'zoom:', zoom, 'basemap:', basemap);
 
     // Initialize map
     const map = L.map(mapContainer.current, {

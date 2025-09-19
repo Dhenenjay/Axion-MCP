@@ -52,6 +52,10 @@ export default function MapViewerPage() {
       })
       .then(data => {
         console.log('Map data from API:', data);
+        console.log('Map metadata:', data?.metadata);
+        console.log('Map center:', data?.metadata?.center);
+        console.log('Map zoom:', data?.metadata?.zoom);
+        console.log('Map region:', data?.region);
         setMapData(data);
         setLoading(false);
       })
