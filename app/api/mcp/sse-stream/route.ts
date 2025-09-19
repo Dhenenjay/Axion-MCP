@@ -333,7 +333,38 @@ export async function POST(req: NextRequest) {
       const { name, arguments: args } = message.params;
       
       try {
-        // Call the actual tool
+        // Check if it's a model tool
+        const modelTools = ['deforestation_detection', 'flood_risk_assessment', 'deforestation_tracking', 'flood_risk_analysis'];
+        
+        if (modelTools.includes(name)) {
+          // Import and execute the model
+          const models = await import('../../../../src/models/geospatial-models.js');
+          
+          // Map tool names to model functions
+          const modelMap: any = {
+            'flood_risk_assessment': models.floodRiskAssessment,
+            'flood_risk_analysis': models.floodRiskAssessment,
+            'deforestation_detection': models.deforestationDetection,
+            'deforestation_tracking': models.deforestationDetection
+          };
+          
+          const modelFunc = modelMap[name];
+          if (modelFunc) {
+            const result = await modelFunc(args || {});
+            return Response.json({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: {
+                content: [{
+                  type: 'text',
+                  text: JSON.stringify(result, null, 2)
+                }]
+              }
+            });
+          }
+        }
+        
+        // Otherwise call the core tool
         const result = await callTool(name, args || {});
         
         return Response.json({
@@ -347,6 +378,7 @@ export async function POST(req: NextRequest) {
           }
         });
       } catch (error: any) {
+        console.error(`[SSE-Stream] Error calling tool ${name}:`, error);
         return Response.json({
           jsonrpc: '2.0',
           id: message.id,
