@@ -136,16 +136,54 @@ const TOOLS = [
   },
   {
     name: 'crop_classification',
-    description: 'Advanced crop classification and agricultural analysis',
+    description: 'Machine learning crop and land cover classification using satellite imagery. Supports Iowa, California, Texas, Kansas, Nebraska, Illinois.',
     inputSchema: {
       type: 'object',
       properties: {
-        region: { type: 'string', description: 'Region for analysis' },
-        startDate: { type: 'string', description: 'Start date YYYY-MM-DD' },
-        endDate: { type: 'string', description: 'End date YYYY-MM-DD' },
-        cropTypes: { type: 'array', items: { type: 'string' }, description: 'Crop types to classify' }
+        operation: {
+          type: 'string',
+          enum: ['classify', 'train', 'evaluate', 'export'],
+          description: 'Operation type: classify (full classification), train (model only), evaluate (accuracy metrics), export (save results)'
+        },
+        region: { 
+          type: 'string', 
+          description: 'US state name (e.g., Iowa, California) or geometry. Supported states: Iowa, California, Texas, Kansas, Nebraska, Illinois' 
+        },
+        startDate: { 
+          type: 'string', 
+          description: 'Start date for imagery in YYYY-MM-DD format. Default: 6 months ago' 
+        },
+        endDate: { 
+          type: 'string', 
+          description: 'End date for imagery in YYYY-MM-DD format. Default: current date' 
+        },
+        classifier: {
+          type: 'string',
+          enum: ['randomForest', 'svm', 'cart', 'naiveBayes'],
+          description: 'Machine learning classifier. Default: randomForest (best accuracy)'
+        },
+        numberOfTrees: {
+          type: 'number',
+          description: 'Number of trees for Random Forest classifier (10-500). Default: 50'
+        },
+        includeIndices: {
+          type: 'boolean',
+          description: 'Include vegetation indices (NDVI, EVI, SAVI, NDWI). Default: true'
+        },
+        createMap: {
+          type: 'boolean',
+          description: 'Create interactive web map (slower for large areas). Default: false. Set to false for faster processing'
+        },
+        scale: {
+          type: 'number',
+          description: 'Pixel resolution in meters (10-1000). Default: 30 for Landsat/Sentinel'
+        },
+        cloudCoverMax: {
+          type: 'number',
+          description: 'Maximum cloud cover percentage (0-100). Default: 20'
+        }
       },
-      required: ['region']
+      required: ['operation', 'region']
     }
   }
 ];

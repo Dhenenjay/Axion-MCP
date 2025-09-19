@@ -6,8 +6,9 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { list, get } from './registry';
+import { list, get, listWithSchemas } from './registry';
 import { initEarthEngineWithSA } from '../gee/client';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 // Import the consolidated super tools
 import './tools/consolidated/earth_engine_data';
@@ -42,12 +43,32 @@ export async function buildConsolidatedServer() {
   
   // Register tools handler
   server.setRequestHandler('tools/list', async () => {
-    const toolList = list();
-    console.error(`[MCP] Serving ${toolList.length} consolidated tools`);
+    const toolsWithSchemas = listWithSchemas();
+    console.error(`[MCP] Serving ${toolsWithSchemas.length} consolidated tools`);
     
-    // Log tool names for verification
-    toolList.forEach(tool => {
+    // Convert Zod schemas to JSON schemas for MCP protocol
+    const toolList = toolsWithSchemas.map(tool => {
+      let inputSchema;
+      try {
+        // Convert Zod schema to JSON Schema if it exists
+        if (tool.input) {
+          inputSchema = zodToJsonSchema(tool.input, {
+            target: 'openApi3',
+            $refStrategy: 'none'
+          });
+        }
+      } catch (e) {
+        console.error(`[MCP] Failed to convert schema for ${tool.name}:`, e);
+        inputSchema = { type: 'object', properties: {} };
+      }
+      
       console.error(`[MCP] - ${tool.name}: ${tool.description.substring(0, 50)}...`);
+      
+      return {
+        name: tool.name,
+        description: tool.description,
+        inputSchema: inputSchema
+      };
     });
     
     return { tools: toolList };
