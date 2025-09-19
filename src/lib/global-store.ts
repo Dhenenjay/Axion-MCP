@@ -1,12 +1,14 @@
 /**
  * Global singleton store for Earth Engine data
- * Uses global object to ensure persistence across module reloads
+ * Now uses Redis for persistence across server restarts
+ * Falls back to in-memory storage when Redis is unavailable
  * 
  * IMPORTANT: Earth Engine objects are server-side references, not actual data.
- * We store them directly and they maintain their computation graph.
+ * We store metadata and tile URLs in Redis, not the actual EE objects.
  */
 
 import ee from '@google/earthengine';
+import * as redisStore from './redis-store';
 
 // Use Node.js global object to ensure true singleton
 declare global {
@@ -40,23 +42,34 @@ export const globalMapSessions = global.eeStore.mapSessions;
 export const globalEECache = global.eeStore.eeCache;
 
 // Helper functions
-export function addComposite(key: string, image: any, metadata?: any) {
-  // IMPORTANT: Store the Earth Engine object directly
-  // Earth Engine objects are computation graphs, not data
-  // They maintain their server-side state and methods
+export async function addComposite(key: string, image: any, metadata?: any) {
+  // IMPORTANT: Earth Engine objects cannot be directly serialized
+  // We store them in memory for the current session
+  // And store metadata + tile URLs in Redis for persistence
   
-  // Store the EE object reference
+  // Always store in memory for current session
   globalCompositeStore[key] = image;
   
-  // Also store metadata about the object type
-  if (metadata) {
-    globalMetadataStore[key] = {
-      ...metadata,
-      eeType: image?.constructor?.name || 'unknown',
-      hasNormalizedDifference: typeof image?.normalizedDifference === 'function',
-      hasSelect: typeof image?.select === 'function',
-      hasBandNames: typeof image?.bandNames === 'function'
-    };
+  // Prepare metadata for Redis
+  const compositeData = {
+    ...metadata,
+    eeType: image?.constructor?.name || 'unknown',
+    hasNormalizedDifference: typeof image?.normalizedDifference === 'function',
+    hasSelect: typeof image?.select === 'function',
+    hasBandNames: typeof image?.bandNames === 'function',
+    created: new Date().toISOString(),
+    type: metadata?.type || 'composite'
+  };
+  
+  // Store metadata
+  globalMetadataStore[key] = compositeData;
+  
+  // Also store in Redis for persistence
+  try {
+    await redisStore.addComposite(key, compositeData);
+    console.log(`[GlobalStore] Added composite ${key} to Redis`);
+  } catch (error) {
+    console.error(`[GlobalStore] Failed to store in Redis:`, error);
   }
   
   console.log(`[GlobalStore] Added composite: ${key}`);
@@ -78,55 +91,131 @@ export function addComposite(key: string, image: any, metadata?: any) {
   }
 }
 
-export function getComposite(key: string) {
-  const composite = globalCompositeStore[key];
+export async function getComposite(key: string) {
+  // First check memory store (current session)
+  let composite = globalCompositeStore[key];
   
   if (composite) {
-    console.log(`[GlobalStore] Retrieved composite: ${key}`);
-    
-    // Check if it still has EE methods
-    const metadata = globalMetadataStore[key];
-    const checks = {
-      select: typeof composite.select === 'function',
-      normalizedDifference: typeof composite.normalizedDifference === 'function',
-      clip: typeof composite.clip === 'function'
-    };
-    
-    console.log(`[GlobalStore] EE methods check for ${key}:`, checks);
-    
-    if (!checks.normalizedDifference && metadata?.hasNormalizedDifference) {
-      console.error(`[GlobalStore] ERROR: ${key} lost normalizedDifference method!`);
-      console.log(`[GlobalStore] Composite type:`, composite?.constructor?.name);
-      console.log(`[GlobalStore] Composite keys:`, Object.keys(composite || {}));
-    }
-  } else {
-    console.log(`[GlobalStore] Composite ${key} not found`);
-    console.log(`[GlobalStore] Available keys: ${getAllCompositeKeys().join(', ')}`);
+    console.log(`[GlobalStore] Retrieved composite ${key} from memory`);
+    return composite;
   }
   
-  return composite;
+  // If not in memory, check Redis for metadata
+  try {
+    const redisData = await redisStore.getComposite(key);
+    if (redisData) {
+      console.log(`[GlobalStore] Found composite ${key} metadata in Redis`);
+      console.log(`[GlobalStore] Note: EE object needs to be recreated from metadata`);
+      // Store the metadata for reference
+      globalMetadataStore[key] = redisData;
+      // Return null - the calling code needs to recreate the EE object
+      return null;
+    }
+  } catch (error) {
+    console.error(`[GlobalStore] Failed to check Redis:`, error);
+  }
+  
+  console.log(`[GlobalStore] Composite ${key} not found in memory or Redis`);
+  const keys = await getAllCompositeKeys();
+  console.log(`[GlobalStore] Available keys: ${keys.join(', ')}`);
+  
+  return null;
 }
 
-export function getAllCompositeKeys() {
-  return Object.keys(globalCompositeStore);
+export async function getAllCompositeKeys() {
+  // Get keys from both memory and Redis
+  const memoryKeys = Object.keys(globalCompositeStore);
+  const redisKeys = await redisStore.getAllCompositeKeys();
+  
+  // Combine and deduplicate
+  const allKeys = new Set([...memoryKeys, ...redisKeys]);
+  return Array.from(allKeys);
 }
 
 export function getMetadata(key: string) {
   return globalMetadataStore[key];
 }
 
-export function addMapSession(id: string, session: any) {
+export async function addMapSession(id: string, session: any) {
+  // Store in memory
   globalMapSessions[id] = session;
+  
+  // Store in Redis
+  try {
+    await redisStore.addMapSession(id, session);
+    console.log(`[GlobalStore] Added map session ${id} to Redis`);
+  } catch (error) {
+    console.error(`[GlobalStore] Failed to store map session in Redis:`, error);
+  }
+  
   console.log(`[GlobalStore] Added map session: ${id}`);
   console.log(`[GlobalStore] Total map sessions: ${Object.keys(globalMapSessions).length}`);
 }
 
-export function getMapSession(id: string) {
+export async function getMapSession(id: string) {
   console.log(`[GlobalStore] Fetching map session: ${id}`);
-  console.log(`[GlobalStore] Available sessions: ${Object.keys(globalMapSessions).join(', ')}`);
-  return globalMapSessions[id];
+  
+  // Check memory first
+  if (globalMapSessions[id]) {
+    console.log(`[GlobalStore] Found map session ${id} in memory`);
+    return globalMapSessions[id];
+  }
+  
+  // Check Redis
+  try {
+    const session = await redisStore.getMapSession(id);
+    if (session) {
+      console.log(`[GlobalStore] Found map session ${id} in Redis`);
+      // Cache in memory for this session
+      globalMapSessions[id] = session;
+      return session;
+    }
+  } catch (error) {
+    console.error(`[GlobalStore] Failed to get map session from Redis:`, error);
+  }
+  
+  console.log(`[GlobalStore] Map session ${id} not found`);
+  return null;
 }
 
-export function getAllMapSessions() {
-  return globalMapSessions;
+export async function getAllMapSessions() {
+  try {
+    const sessions = await redisStore.getAllMapSessions();
+    return sessions;
+  } catch (error) {
+    console.error(`[GlobalStore] Failed to get map sessions from Redis:`, error);
+    return globalMapSessions;
+  }
 }
+
+/**
+ * Initialize the store (ensures Redis connection)
+ */
+export async function initStore() {
+  try {
+    await redisStore.initRedis();
+    const stats = await redisStore.getStats();
+    console.log('[GlobalStore] Store initialized with Redis');
+    console.log('[GlobalStore] Stats:', stats);
+    return true;
+  } catch (error) {
+    console.error('[GlobalStore] Failed to initialize Redis:', error);
+    console.log('[GlobalStore] Using in-memory fallback');
+    return false;
+  }
+}
+
+/**
+ * Get store statistics
+ */
+export async function getStoreStats() {
+  const stats = await redisStore.getStats();
+  return {
+    ...stats,
+    memoryStoreKeys: Object.keys(globalCompositeStore).length,
+    memoryMapSessions: Object.keys(globalMapSessions).length
+  };
+}
+
+// Initialize on module load
+initStore().catch(console.error);
