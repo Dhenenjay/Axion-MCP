@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 // Dynamically import Leaflet to avoid SSR issues
 const MapComponent = dynamic(() => import('../../components/MapViewer'), {
@@ -90,9 +91,9 @@ export default function MapViewerPage() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <Head>
-        <title>Planetary Engine - {mapData.region}</title>
+        <title>Planetary Engine - {mapData.region || 'Map'}</title>
         <link
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -105,9 +106,9 @@ export default function MapViewerPage() {
         <div className="map-header">
           <h1>Planetary Engine Map Viewer</h1>
           <div className="map-info">
-            <span className="region">📍 {mapData.region}</span>
-            <span className="layers">🗺️ {mapData.layers.length} layer(s)</span>
-            <span className="created">🕐 {new Date(mapData.created).toLocaleString()}</span>
+            <span className="region">📍 {mapData.region || 'Unknown'}</span>
+            <span className="layers">🗺️ {mapData.layers?.length || 0} layer(s)</span>
+            <span className="created">🕐 {mapData.created ? new Date(mapData.created).toLocaleString() : 'Now'}</span>
           </div>
         </div>
         
@@ -125,6 +126,7 @@ export default function MapViewerPage() {
           </div>
         </div>
       </div>
+    </ErrorBoundary>
 
       <style jsx>{`
         .map-page {
