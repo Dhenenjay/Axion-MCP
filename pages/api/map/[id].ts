@@ -5,14 +5,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMapSession } from '../../../src/lib/global-store';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
   
   if (!id || typeof id !== 'string') {
     return res.status(400).json({ error: 'Invalid map ID' });
   }
   
-  const session = getMapSession(id);
+  const session = await getMapSession(id);
   
   if (!session) {
     return res.status(404).json({ error: 'Map session not found' });
