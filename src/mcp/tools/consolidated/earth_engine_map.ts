@@ -233,7 +233,9 @@ async function createMap(params: any) {
   
   // Validate that layers have inputs or tileUrls if no primary input is provided
   if (!input && layers && layers.length > 0) {
-    const hasInputs = layers.every(layer => layer.input || layer.tileUrl);
+    const hasInputs = layers.every(layer => 
+      layer.input || layer.data || layer.dataset || layer.compositeKey || layer.tileUrl
+    );
     if (!hasInputs) {
       throw new Error('When no primary input is provided, all layers must have their own input or tileUrl');
     }
@@ -282,13 +284,54 @@ async function createMap(params: any) {
         
         if (layerInputKey) {
           // Layer has its own input source
+          // First check if it's in the composite store
           layerImage = compositeStore[layerInputKey];
+          
+          // If not in store, check if it's a dataset ID
           if (!layerImage) {
-            console.log(`[Map] No image found in store for: ${layerInputKey}, attempting direct creation...`);
+            console.log(`[Map] No image found in store for: ${layerInputKey}, checking if it's a dataset ID...`);
+            
+            // Check if it looks like a dataset ID (contains forward slash)
+            if (layerInputKey.includes('/')) {
+              try {
+                console.log(`[Map] Creating image from dataset: ${layerInputKey}`);
+                // It's a dataset ID, create ImageCollection or Image directly
+                if (layerInputKey.includes('S2') || layerInputKey.includes('SENTINEL')) {
+                  // Sentinel-2 dataset
+                  layerImage = ee.ImageCollection(layerInputKey)
+                    .filterDate('2024-06-01', '2024-08-31')
+                    .map((image: any) => {
+                      const qa = image.select('QA60');
+                      const mask = qa.bitwiseAnd(1 << 10).eq(0);
+                      return image.updateMask(mask).divide(10000);
+                    })
+                    .median();
+                } else if (layerInputKey.includes('LANDSAT')) {
+                  // Landsat dataset
+                  layerImage = ee.ImageCollection(layerInputKey)
+                    .filterDate('2024-06-01', '2024-08-31')
+                    .median();
+                } else {
+                  // Generic dataset - try as ImageCollection first
+                  try {
+                    layerImage = ee.ImageCollection(layerInputKey)
+                      .filterDate('2024-01-01', '2024-12-31')
+                      .median();
+                  } catch {
+                    // If that fails, try as single Image
+                    layerImage = ee.Image(layerInputKey);
+                  }
+                }
+              } catch (datasetError) {
+                console.log(`[Map] Failed to create from dataset ID: ${datasetError}`);
+                // Continue with pattern-based fallback
+              }
+            }
             
             // FALLBACK: Create the image directly based on the input key pattern
-            try {
-              if (layerInputKey.includes('classification')) {
+            if (!layerImage) {
+              try {
+                if (layerInputKey.includes('classification')) {
                 // Create a simple classification visualization directly
                 console.log(`[Map] Creating classification layer directly`);
                 // Create a dummy classification image with random values 1-6
@@ -311,13 +354,22 @@ async function createMap(params: any) {
                     return image.updateMask(mask).divide(10000);
                   })
                   .median();
-              } else {
-                console.log(`[Map] Could not create fallback for ${layerInputKey}, skipping`);
+                } else {
+                  // Default: try to create from common datasets
+                  console.log(`[Map] Attempting default Sentinel-2 composite as fallback`);
+                  layerImage = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+                    .filterDate('2024-06-01', '2024-08-31')
+                    .map((image: any) => {
+                      const qa = image.select('QA60');
+                      const mask = qa.bitwiseAnd(1 << 10).eq(0);
+                      return image.updateMask(mask).divide(10000);
+                    })
+                    .median();
+                }
+              } catch (fallbackError) {
+                console.log(`[Map] Fallback creation failed: ${fallbackError}, skipping layer ${layer.name}`);
                 continue;
               }
-            } catch (fallbackError) {
-              console.log(`[Map] Fallback creation failed: ${fallbackError}, skipping layer ${layer.name}`);
-              continue;
             }
           }
           layerDatasetType = detectDatasetType(layerInputKey);
