@@ -60,9 +60,21 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
     const map = L.map(mapContainer.current, {
       center: [center[1], center[0]], // Leaflet uses [lat, lng]
       zoom: zoom,
-      zoomControl: true,
-      attributionControl: true
+      zoomControl: false, // We'll add it manually for better control
+      attributionControl: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true
     });
+    
+    // Add zoom control explicitly
+    L.control.zoom({
+      position: 'topleft',
+      zoomInText: '+',
+      zoomOutText: '-',
+      zoomInTitle: 'Zoom in',
+      zoomOutTitle: 'Zoom out'
+    }).addTo(map);
 
     mapInstance.current = map;
 
@@ -368,6 +380,31 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
           background: transparent !important;
           color: #ccc !important;
           border-color: #666 !important;
+        }
+        
+        /* Ensure zoom controls are visible */
+        :global(.leaflet-control-zoom) {
+          background: rgba(42, 42, 42, 0.95) !important;
+          border: 1px solid #444 !important;
+          border-radius: 4px !important;
+        }
+        
+        :global(.leaflet-control-zoom a) {
+          background: rgba(42, 42, 42, 0.95) !important;
+          color: white !important;
+          width: 30px !important;
+          height: 30px !important;
+          line-height: 30px !important;
+          font-size: 18px !important;
+          font-weight: bold !important;
+        }
+        
+        :global(.leaflet-control-zoom a:hover) {
+          background: rgba(76, 175, 80, 0.5) !important;
+        }
+        
+        :global(.leaflet-control-zoom-in) {
+          border-bottom: 1px solid #444 !important;
         }
       `}</style>
     </>

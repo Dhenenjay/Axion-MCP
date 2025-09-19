@@ -146,32 +146,21 @@ function normalizeVisParams(visParams: any, bands: string[], datasetType: string
     // RGB or multi-band visualization
     switch (datasetType) {
       case 'sentinel2-sr':
-        // Sentinel-2 Surface Reflectance: Check if values are already scaled
-        // If max > 1000, assume values are in 0-10000 range (raw)
-        // If max <= 1, assume values are in 0-1 range (already scaled)
-        if (!normalized.min || normalized.min < 0) {
+        // Sentinel-2 Surface Reflectance values should be passed through as-is
+        // The image processing code will handle the appropriate scaling
+        if (!normalized.min) {
           normalized.min = 0;
         }
         
-        // Check if values appear to be in raw range (0-10000) or scaled (0-1)
-        if (normalized.max && normalized.max > 100) {
-          // Values appear to be in raw range, keep them as-is
-          console.log(`[Map] Keeping Sentinel-2 raw range: ${normalized.min}-${normalized.max}`);
-          // Common raw ranges for Sentinel-2
-          if (!normalized.max) {
-            normalized.max = 3000; // Default for raw values
-          }
+        // Don't modify the max value if explicitly provided
+        // The caller knows best what range their data is in
+        if (!normalized.max) {
+          // Default to 3000 if not specified (raw Sentinel-2 range)
+          normalized.max = 3000;
+          console.log(`[Map] Using default Sentinel-2 max: 3000`);
         } else {
-          // Values appear to be scaled (0-1 range)
-          if (!normalized.max || normalized.max > 1) {
-            console.log(`[Map] Setting Sentinel-2 scaled max from ${normalized.max} to 0.3`);
-            normalized.max = 0.3;
-          }
-          // Cap at 0.3 for better visualization in scaled range
-          if (normalized.max > 0.3) {
-            console.log(`[Map] Capping Sentinel-2 scaled max from ${normalized.max} to 0.3`);
-            normalized.max = 0.3;
-          }
+          // Keep the provided max value
+          console.log(`[Map] Using provided Sentinel-2 max: ${normalized.max}`);
         }
         
         // Default gamma for better contrast
