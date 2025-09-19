@@ -577,21 +577,71 @@ async function createMap(params: any) {
  * List active maps
  */
 async function listMaps() {
-  const maps = Object.values(activeMaps).map(session => ({
-    id: session.id,
-    url: `http://localhost:3000/map/${session.id}`,
-    region: session.region,
-    created: session.created.toISOString(),
-    layers: session.layers.length
-  }));
+  // First, try to load all map sessions from Redis/store
+  // Import the function we need
+  const { getAllMapSessions } = require('../../../lib/global-store-compat');
   
-  return {
-    success: true,
-    operation: 'list',
-    count: maps.length,
-    maps,
-    message: `${maps.length} active map(s)`
-  };
+  try {
+    // Get all sessions from store (includes Redis)
+    const allSessions = await getAllMapSessions();
+    
+    // Also check in-memory store for any not in Redis yet
+    const memoryMaps = Object.values(activeMaps);
+    
+    // Combine and deduplicate by ID
+    const sessionMap = new Map();
+    
+    // Add Redis sessions
+    if (allSessions && Array.isArray(allSessions)) {
+      allSessions.forEach((session: any) => {
+        if (session && session.id) {
+          sessionMap.set(session.id, session);
+        }
+      });
+    }
+    
+    // Add memory sessions (may overwrite Redis ones with more recent data)
+    memoryMaps.forEach((session: any) => {
+      if (session && session.id) {
+        sessionMap.set(session.id, session);
+      }
+    });
+    
+    // Convert to array and format
+    const maps = Array.from(sessionMap.values()).map(session => ({
+      id: session.id,
+      url: `http://localhost:3000/map/${session.id}`,
+      region: session.region,
+      created: typeof session.created === 'string' ? session.created : session.created.toISOString(),
+      layers: session.layers ? session.layers.length : 0
+    }));
+    
+    return {
+      success: true,
+      operation: 'list',
+      count: maps.length,
+      maps,
+      message: `${maps.length} active map(s)`
+    };
+  } catch (error: any) {
+    console.error('[Map] Error listing maps:', error);
+    // Fallback to memory-only if Redis fails
+    const maps = Object.values(activeMaps).map(session => ({
+      id: session.id,
+      url: `http://localhost:3000/map/${session.id}`,
+      region: session.region,
+      created: session.created.toISOString(),
+      layers: session.layers.length
+    }));
+    
+    return {
+      success: true,
+      operation: 'list',
+      count: maps.length,
+      maps,
+      message: `${maps.length} active map(s) (from memory only)`
+    };
+  }
 }
 
 /**

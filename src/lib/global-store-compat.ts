@@ -133,6 +133,21 @@ export function getMetadata(key: string): any {
 }
 
 /**
+ * Get all map sessions (async wrapper for compatibility)
+ */
+export async function getAllMapSessions(): Promise<any[]> {
+  try {
+    // This properly calls the async function
+    const sessions = await asyncStore.getAllMapSessions();
+    return sessions;
+  } catch (error) {
+    console.error('[GlobalStoreCompat] Failed to get all map sessions:', error);
+    // Fallback to in-memory sessions
+    return Object.values(asyncStore.globalMapSessions);
+  }
+}
+
+/**
  * Export the in-memory stores for direct access
  */
 export const globalCompositeStore = asyncStore.globalCompositeStore;
@@ -152,6 +167,7 @@ export default {
   getAllCompositeKeys,
   addMapSession,
   getMapSession,
+  getAllMapSessions,
   getMetadata,
   globalCompositeStore,
   globalMetadataStore,
