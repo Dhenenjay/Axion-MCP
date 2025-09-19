@@ -146,21 +146,23 @@ function normalizeVisParams(visParams: any, bands: string[], datasetType: string
     // RGB or multi-band visualization
     switch (datasetType) {
       case 'sentinel2-sr':
-        // Sentinel-2 Surface Reflectance values should be passed through as-is
-        // The image processing code will handle the appropriate scaling
+        // Sentinel-2 Surface Reflectance - handle both scaled and raw values
         if (!normalized.min) {
           normalized.min = 0;
         }
         
-        // Don't modify the max value if explicitly provided
-        // The caller knows best what range their data is in
+        // Check if max value indicates scaled (0-1) or raw (0-10000) range
         if (!normalized.max) {
-          // Default to 3000 if not specified (raw Sentinel-2 range)
-          normalized.max = 3000;
-          console.log(`[Map] Using default Sentinel-2 max: 3000`);
+          // No max specified, use a sensible default
+          normalized.max = 0.3; // Default for scaled values
+          console.log(`[Map] Using default Sentinel-2 max: 0.3 (scaled range)`);
+        } else if (normalized.max <= 1) {
+          // Max <= 1 indicates already scaled values, keep as-is
+          console.log(`[Map] Keeping scaled Sentinel-2 max: ${normalized.max}`);
         } else {
-          // Keep the provided max value
-          console.log(`[Map] Using provided Sentinel-2 max: ${normalized.max}`);
+          // Max > 1 could be raw values, but we now handle this earlier
+          // in the adjustment phase, so just keep it
+          console.log(`[Map] Keeping provided Sentinel-2 max: ${normalized.max}`);
         }
         
         // Default gamma for better contrast
@@ -302,6 +304,7 @@ async function createMap(params: any) {
         // Get the image for this layer (either from layer.input/data/compositeKey or use primary image)
         let layerImage;
         let layerDatasetType = datasetType;
+        let isAlreadyScaled = false; // Track if the image is already scaled to 0-1
         
         // Support multiple field names: 'input', 'data', 'image', 'dataset', 'compositeKey'
         const layerInputKey = layer.input || layer.data || layer.image || layer.dataset || layer.compositeKey;
@@ -315,6 +318,13 @@ async function createMap(params: any) {
           
           // First check if it's in the composite store
           layerImage = compositeStore[layerInputKey];
+          
+          // If we found it in the composite store, it's likely already scaled (0-1 range)
+          // This is because our earth_engine_process tool scales Sentinel-2 with .divide(10000)
+          if (layerImage) {
+            isAlreadyScaled = true;
+            console.log(`[Map] Found composite ${layerInputKey} - assuming already scaled to 0-1 range`);
+          }
           
           // If not in store, check if it's a dataset ID
           if (!layerImage) {
@@ -453,7 +463,24 @@ async function createMap(params: any) {
         Object.keys(flattenedVis).forEach(key => 
           flattenedVis[key] === undefined && delete flattenedVis[key]
         );
-        const rawVis = { ...visParams, ...layerVisParams, ...flattenedVis };
+        let rawVis = { ...visParams, ...layerVisParams, ...flattenedVis };
+        
+        // If the image is already scaled (0-1 range) but vis params are for raw values (e.g., max: 3000)
+        // we need to adjust the vis params
+        if (isAlreadyScaled && rawVis.max && rawVis.max > 10) {
+          console.log(`[Map] Image is scaled but vis params are for raw values (max: ${rawVis.max})`);
+          console.log(`[Map] Converting vis params to scaled range`);
+          // Convert from raw (0-10000) to scaled (0-1) range for Sentinel-2
+          if (layerDatasetType === 'sentinel2-sr' || layerInputKey?.includes('composite')) {
+            rawVis = {
+              ...rawVis,
+              min: (rawVis.min || 0) / 10000,
+              max: rawVis.max / 10000
+            };
+            console.log(`[Map] Adjusted vis params: min=${rawVis.min}, max=${rawVis.max}`);
+          }
+        }
+        
         const layerVis = normalizeVisParams(rawVis, layerBands, layerDatasetType);
         
         console.log(`[Map] Layer ${layer.name} - input: ${layerInputKey || input}, bands: ${layerBands}, vis:`, layerVis);
