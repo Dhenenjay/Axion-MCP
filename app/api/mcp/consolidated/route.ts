@@ -30,16 +30,12 @@ export async function POST(request: NextRequest) {
     ];
     
     // Model tools that use the core tools internally
+    // Only exposing flood risk and deforestation detection for deployment
     const modelTools = [
-      'wildfire_risk_assessment',
       'flood_risk_assessment',
       'flood_risk_analysis', // alternate name
-      'agricultural_monitoring',
-      'agriculture_monitoring', // alternate name
       'deforestation_detection',
-      'deforestation_tracking', // alternate name  
-      'water_quality_monitoring',
-      'water_quality_assessment' // alternate name
+      'deforestation_tracking' // alternate name  
     ];
     
     // Check if it's a core tool
@@ -59,16 +55,12 @@ export async function POST(request: NextRequest) {
       const models = await import('../../../../src/models/geospatial-models.js');
       
       // Map tool names to model functions
+      // Only including flood and deforestation models for deployment
       const modelMap: any = {
-        'wildfire_risk_assessment': models.wildfireRiskAssessment,
         'flood_risk_assessment': models.floodRiskAssessment,
         'flood_risk_analysis': models.floodRiskAssessment,
-        'agricultural_monitoring': models.agriculturalMonitoring,
-        'agriculture_monitoring': models.agriculturalMonitoring,
         'deforestation_detection': models.deforestationDetection,
-        'deforestation_tracking': models.deforestationDetection,
-        'water_quality_monitoring': models.waterQualityMonitoring,
-        'water_quality_assessment': models.waterQualityMonitoring
+        'deforestation_tracking': models.deforestationDetection
       };
       
       const modelFunc = modelMap[tool];

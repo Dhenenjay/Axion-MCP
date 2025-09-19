@@ -17,6 +17,8 @@ import './tools/consolidated/earth_engine_export';
 import './tools/consolidated/earth_engine_system';
 import './tools/consolidated/earth_engine_map';
 import './tools/consolidated/crop_classification';
+// Note: Geospatial models (deforestation_detection, flood_risk_assessment) are handled
+// via the consolidated route and geospatial-models.js, not as separate tool files
 
 /**
  * Build and configure the consolidated MCP server
@@ -112,8 +114,8 @@ export async function buildConsolidatedServer() {
   });
   
   console.error('[MCP] Consolidated server configured successfully');
-  console.error('[MCP] ✅ Reduced from 30 tools to 6 super tools');
-  console.error('[MCP] ✅ This should prevent MCP client crashes');
+  console.error('[MCP] ✅ Running with 6 core tools');
+  console.error('[MCP] ✅ Geospatial models (flood_risk, deforestation) available via consolidated route');
   
   return server;
 }
@@ -125,7 +127,7 @@ async function main() {
   try {
     console.error('[MCP] Starting Earth Engine MCP Consolidated Server...');
     console.error('[MCP] Version: 2.0.0 (Consolidated)');
-    console.error('[MCP] Tools: 6 super tools (data, process, export, system, map, crop_classification)');
+    console.error('[MCP] Tools: 6 core tools (models available via consolidated route)');
     
     const server = await buildConsolidatedServer();
     const transport = new StdioServerTransport();

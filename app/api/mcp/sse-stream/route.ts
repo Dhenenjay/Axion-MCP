@@ -185,6 +185,79 @@ const TOOLS = [
       },
       required: ['operation', 'region']
     }
+  },
+  {
+    name: 'flood_risk_assessment',
+    description: 'Analyze flood risk factors including terrain, precipitation, water indices, and urban development. Supports urban, coastal, riverine, and snowmelt flood analysis.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        region: { 
+          type: 'string', 
+          description: 'Area to analyze (e.g., "Houston", "Miami", "New Orleans"). Default: Houston' 
+        },
+        startDate: { 
+          type: 'string', 
+          description: 'Start date for analysis in YYYY-MM-DD format. Default: 6 months ago' 
+        },
+        endDate: { 
+          type: 'string', 
+          description: 'End date for analysis in YYYY-MM-DD format. Default: current date' 
+        },
+        floodType: {
+          type: 'string',
+          enum: ['urban', 'coastal', 'riverine', 'snowmelt'],
+          description: 'Type of flooding to analyze. Default: urban'
+        },
+        analyzeWaterChange: {
+          type: 'boolean',
+          description: 'Analyze water body extent changes. Default: true'
+        },
+        scale: {
+          type: 'number',
+          description: 'Analysis scale in meters. Default: 100'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'deforestation_detection',
+    description: 'Monitor forest loss and degradation by comparing baseline and current forest cover. Calculates deforestation percentage, estimates carbon loss, and generates alerts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        region: { 
+          type: 'string', 
+          description: 'Forest area to analyze (e.g., "Amazon", "Congo Basin", "Borneo"). Default: Amazon' 
+        },
+        baselineStart: { 
+          type: 'string', 
+          description: 'Baseline period start date in YYYY-MM-DD format. Default: 6 months ago' 
+        },
+        baselineEnd: { 
+          type: 'string', 
+          description: 'Baseline period end date in YYYY-MM-DD format. Default: 3 months ago' 
+        },
+        currentStart: { 
+          type: 'string', 
+          description: 'Current period start date in YYYY-MM-DD format. Default: 1 month ago' 
+        },
+        currentEnd: { 
+          type: 'string', 
+          description: 'Current period end date in YYYY-MM-DD format. Default: current date' 
+        },
+        scale: {
+          type: 'number',
+          description: 'Analysis scale in meters. Default: 30'
+        },
+        dataset: {
+          type: 'string',
+          description: 'Satellite dataset to use. Default: COPERNICUS/S2_SR_HARMONIZED'
+        }
+      },
+      required: []
+    }
   }
 ];
 
