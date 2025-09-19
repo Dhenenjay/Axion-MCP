@@ -46,11 +46,22 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
 
   useEffect(() => {
     if (!mapContainer.current || mapInstance.current || !L) return;
+    
+    // Validate mapData
+    if (!mapData || !mapData.metadata) {
+      console.error('Invalid map data:', mapData);
+      return;
+    }
+
+    // Default values for metadata
+    const center = mapData.metadata?.center || [-98.5795, 39.8283]; // Default to US center
+    const zoom = mapData.metadata?.zoom || 5;
+    const basemap = mapData.metadata?.basemap || 'satellite';
 
     // Initialize map
     const map = L.map(mapContainer.current, {
-      center: [mapData.metadata.center[1], mapData.metadata.center[0]], // Leaflet uses [lat, lng]
-      zoom: mapData.metadata.zoom,
+      center: [center[1], center[0]], // Leaflet uses [lat, lng]
+      zoom: zoom,
       zoomControl: true,
       attributionControl: true
     });
@@ -78,24 +89,41 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
     };
 
     // Add default base layer
-    const defaultBasemap = mapData.metadata.basemap === 'dark' ? 'Dark' :
-                          mapData.metadata.basemap === 'terrain' ? 'Terrain' :
-                          mapData.metadata.basemap === 'roadmap' ? 'Streets' : 'Satellite';
+    const defaultBasemap = basemap === 'dark' ? 'Dark' :
+                          basemap === 'terrain' ? 'Terrain' :
+                          basemap === 'roadmap' ? 'Streets' : 'Satellite';
     baseLayers[defaultBasemap].addTo(map);
 
     // Add Earth Engine layers
     const eeLayers: { [key: string]: L.TileLayer } = {};
     
-    mapData.layers.forEach((layer, index) => {
-      const eeLayer = L.tileLayer(layer.tileUrl, {
+    // Check if layers exist and is an array
+    const layers = mapData.layers || [];
+    
+    // If no layers but we have a tileUrl, use that as a single layer
+    if (layers.length === 0 && mapData.tileUrl) {
+      const eeLayer = L.tileLayer(mapData.tileUrl, {
         attribution: 'Google Earth Engine',
         maxZoom: 20,
         opacity: 1
       });
-      
-      eeLayers[`EE: ${layer.name}`] = eeLayer;
+      eeLayers['EE: Default'] = eeLayer;
       eeLayer.addTo(map);
-    });
+    } else {
+      // Add layers from the layers array
+      layers.forEach((layer, index) => {
+        if (layer && layer.tileUrl) {
+          const eeLayer = L.tileLayer(layer.tileUrl, {
+            attribution: 'Google Earth Engine',
+            maxZoom: 20,
+            opacity: 1
+          });
+          
+          eeLayers[`EE: ${layer.name || `Layer ${index + 1}`}`] = eeLayer;
+          eeLayer.addTo(map);
+        }
+      });
+    }
     
     // Add layer control
     const layerControl = L.control.layers(baseLayers, eeLayers, {
@@ -141,8 +169,8 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
         resetBtn.onclick = (e) => {
           e.preventDefault();
           map.setView(
-            [mapData.metadata.center[1], mapData.metadata.center[0]],
-            mapData.metadata.zoom
+            [center[1], center[0]],
+            zoom
           );
         };
 
@@ -182,7 +210,7 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
     <>
       <div ref={mapContainer} className="map-container" />
       
-      {mapData.layers.length > 1 && showLayerControl && (
+      {mapData.layers && mapData.layers.length > 1 && showLayerControl && (
         <div className="layer-switcher">
           <h4>Layers</h4>
           {mapData.layers.map((layer, index) => (
