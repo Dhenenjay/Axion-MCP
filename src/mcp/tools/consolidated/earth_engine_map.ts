@@ -22,6 +22,7 @@ const MapToolSchema = z.object({
     name: z.string().describe('REQUIRED - Display name for this layer (e.g., "Sentinel-2 January 2025")'),
     input: z.string().optional().describe('REQUIRED - The composite/model key to visualize (e.g., composite_1234567890). Must be provided for each layer'),
     data: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
+    image: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
     compositeKey: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
     dataset: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
     tileUrl: z.string().optional().describe('INTERNAL USE - Leave empty, will be generated automatically'),
@@ -234,7 +235,7 @@ async function createMap(params: any) {
   // Validate that layers have inputs or tileUrls if no primary input is provided
   if (!input && layers && layers.length > 0) {
     const hasInputs = layers.every(layer => 
-      layer.input || layer.data || layer.dataset || layer.compositeKey || layer.tileUrl
+      layer.input || layer.data || layer.image || layer.dataset || layer.compositeKey || layer.tileUrl
     );
     if (!hasInputs) {
       throw new Error('When no primary input is provided, all layers must have their own input or tileUrl');
@@ -279,8 +280,8 @@ async function createMap(params: any) {
         let layerImage;
         let layerDatasetType = datasetType;
         
-        // Support multiple field names: 'input', 'data', 'dataset', 'compositeKey'
-        const layerInputKey = layer.input || layer.data || layer.dataset || layer.compositeKey;
+        // Support multiple field names: 'input', 'data', 'image', 'dataset', 'compositeKey'
+        const layerInputKey = layer.input || layer.data || layer.image || layer.dataset || layer.compositeKey;
         
         if (layerInputKey) {
           // Layer has its own input source
