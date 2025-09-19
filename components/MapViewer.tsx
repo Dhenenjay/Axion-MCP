@@ -47,16 +47,12 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
   useEffect(() => {
     if (!mapContainer.current || mapInstance.current || !L) return;
     
-    // Validate mapData
-    if (!mapData || !mapData.metadata) {
-      console.error('Invalid map data:', mapData);
-      return;
-    }
-
-    // Default values for metadata
-    const center = mapData.metadata?.center || [-98.5795, 39.8283]; // Default to US center
-    const zoom = mapData.metadata?.zoom || 5;
-    const basemap = mapData.metadata?.basemap || 'satellite';
+    // Default values for metadata - don't require metadata to exist
+    const center = mapData?.metadata?.center || [-98.5795, 39.8283]; // Default to US center
+    const zoom = mapData?.metadata?.zoom || 5;
+    const basemap = mapData?.metadata?.basemap || 'satellite';
+    
+    console.log('MapViewer loading with data:', mapData);
 
     // Initialize map
     const map = L.map(mapContainer.current, {
@@ -98,31 +94,44 @@ const MapViewer: React.FC<MapViewerProps> = ({ mapData }) => {
     const eeLayers: { [key: string]: L.TileLayer } = {};
     
     // Check if layers exist and is an array
-    const layers = mapData.layers || [];
+    const layers = mapData?.layers || [];
     
-    // If no layers but we have a tileUrl, use that as a single layer
-    if (layers.length === 0 && mapData.tileUrl) {
-      const eeLayer = L.tileLayer(mapData.tileUrl, {
-        attribution: 'Google Earth Engine',
-        maxZoom: 20,
-        opacity: 1
-      });
-      eeLayers['EE: Default'] = eeLayer;
-      eeLayer.addTo(map);
-    } else {
-      // Add layers from the layers array
-      layers.forEach((layer, index) => {
-        if (layer && layer.tileUrl) {
-          const eeLayer = L.tileLayer(layer.tileUrl, {
-            attribution: 'Google Earth Engine',
-            maxZoom: 20,
-            opacity: 1
-          });
-          
-          eeLayers[`EE: ${layer.name || `Layer ${index + 1}`}`] = eeLayer;
-          eeLayer.addTo(map);
-        }
-      });
+    console.log('Available layers:', layers);
+    console.log('TileUrl:', mapData?.tileUrl);
+    
+    // Try to add Earth Engine layers
+    try {
+      // If no layers but we have a tileUrl, use that as a single layer
+      if (layers.length === 0 && mapData?.tileUrl) {
+        console.log('Adding single tile layer:', mapData.tileUrl);
+        const eeLayer = L.tileLayer(mapData.tileUrl, {
+          attribution: 'Google Earth Engine',
+          maxZoom: 20,
+          opacity: 1
+        });
+        eeLayers['EE: Default'] = eeLayer;
+        eeLayer.addTo(map);
+      } else if (layers.length > 0) {
+        // Add layers from the layers array
+        layers.forEach((layer, index) => {
+          if (layer && layer.tileUrl) {
+            console.log(`Adding layer ${index}:`, layer.name, layer.tileUrl);
+            const eeLayer = L.tileLayer(layer.tileUrl, {
+              attribution: 'Google Earth Engine',
+              maxZoom: 20,
+              opacity: 1
+            });
+            
+            eeLayers[`EE: ${layer.name || `Layer ${index + 1}`}`] = eeLayer;
+            eeLayer.addTo(map);
+          }
+        });
+      } else {
+        console.warn('No Earth Engine layers available - map will show base layer only');
+      }
+    } catch (error) {
+      console.error('Error adding Earth Engine layers:', error);
+      // Map will still work with just the base layer
     }
     
     // Add layer control
