@@ -497,11 +497,14 @@ async function createMap(params: any) {
       });
     }
     
-    // Determine center if not provided
+    // Determine center and zoom if not provided
     let mapCenter = center;
+    let mapZoom = zoom || 10; // Default zoom level
+    
     if (!mapCenter && region && region !== 'Unknown') {
       // Try to get bounds for the region
       try {
+        console.log(`[Map] Calculating center for region: ${region}`);
         const geometry = await getRegionGeometry(region);
         const bounds = await geometry.bounds().getInfo();
         const coords = bounds.coordinates[0];
@@ -510,9 +513,54 @@ async function createMap(params: any) {
         const minLat = Math.min(...coords.map((c: any) => c[1]));
         const maxLat = Math.max(...coords.map((c: any) => c[1]));
         mapCenter = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+        
+        // Calculate appropriate zoom level based on bounds
+        const lngDiff = maxLng - minLng;
+        const latDiff = maxLat - minLat;
+        const maxDiff = Math.max(lngDiff, latDiff);
+        
+        // Estimate zoom level based on region size
+        if (maxDiff > 10) mapZoom = 5;      // Country/large state
+        else if (maxDiff > 5) mapZoom = 6;  // State
+        else if (maxDiff > 2) mapZoom = 7;  // Large region
+        else if (maxDiff > 1) mapZoom = 8;  // Metropolitan area
+        else if (maxDiff > 0.5) mapZoom = 9; // City
+        else if (maxDiff > 0.2) mapZoom = 10; // District
+        else mapZoom = 11; // Neighborhood
+        
+        console.log(`[Map] Calculated center: [${mapCenter[0].toFixed(4)}, ${mapCenter[1].toFixed(4)}], zoom: ${mapZoom}`);
       } catch (e) {
-        // Default to US center
-        mapCenter = [-98.5795, 39.8283];
+        console.error(`[Map] Failed to get region bounds, using defaults:`, e);
+        // Try common city centers as fallback
+        const cityCoords: { [key: string]: [number, number, number] } = {
+          'los angeles': [-118.2437, 34.0522, 10],
+          'new york': [-74.0060, 40.7128, 10],
+          'chicago': [-87.6298, 41.8781, 10],
+          'houston': [-95.3698, 29.7604, 10],
+          'phoenix': [-112.0740, 33.4484, 10],
+          'san francisco': [-122.4194, 37.7749, 11],
+          'seattle': [-122.3321, 47.6062, 11],
+          'miami': [-80.1918, 25.7617, 11],
+          'denver': [-104.9903, 39.7392, 10],
+          'atlanta': [-84.3880, 33.7490, 10],
+          'amazon': [-56.7625, -2.6333, 5],
+          'california': [-119.4179, 36.7783, 6],
+          'texas': [-99.9018, 31.9686, 6],
+          'iowa': [-93.0977, 41.8780, 7]
+        };
+        
+        const regionLower = region.toLowerCase();
+        const cityMatch = Object.keys(cityCoords).find(city => regionLower.includes(city));
+        
+        if (cityMatch) {
+          mapCenter = [cityCoords[cityMatch][0], cityCoords[cityMatch][1]];
+          mapZoom = cityCoords[cityMatch][2];
+          console.log(`[Map] Using predefined coords for ${cityMatch}`);
+        } else {
+          // Default to US center
+          mapCenter = [-98.5795, 39.8283];
+          mapZoom = 5;
+        }
       }
     }
     
@@ -528,7 +576,7 @@ async function createMap(params: any) {
       layers: mapLayers,
       metadata: {
         center: mapCenter,
-        zoom,
+        zoom: mapZoom,
         basemap
       }
     };
