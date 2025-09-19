@@ -9,7 +9,7 @@ import { register } from '../../registry';
 import { parseAoi } from '../../../utils/geo';
 import { Storage } from '@google-cloud/storage';
 import { optimizer } from '../../../utils/ee-optimizer';
-import { getComposite, getMetadata, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '../../../lib/global-store';
+import { getComposite, getMetadata, getAllCompositeKeys, globalCompositeStore as compositeStore, globalMetadataStore as compositeMetadata } from '../../../lib/global-store-compat';
 import { generateTilesOptimized } from './tiles_handler';
 import { generateTilesFast } from './tiles_fast';
 import { generateTilesDirect } from './tiles_direct';

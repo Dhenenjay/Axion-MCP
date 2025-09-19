@@ -15,7 +15,7 @@ import {
   globalCompositeStore as compositeStore,
   addMapSession,
   globalMapSessions as activeMaps
-} from '../../../lib/global-store';
+} from '../../../lib/global-store-compat';
 
 // Training point schema
 const TrainingPointSchema = z.object({
