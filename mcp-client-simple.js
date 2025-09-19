@@ -35,16 +35,48 @@ async function main() {
         body: JSON.stringify(message)
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Server error ${response.status}: ${text}`);
-      }
-
       const result = await response.json();
       console.error(`[Client] Response received for ${method}`);
+      console.error(`[Client] Response status: ${response.status}, ok: ${response.ok}`);
+      console.error(`[Client] Response has jsonrpc: ${!!result.jsonrpc}, has error: ${!!result.error}, has result: ${!!result.result}`);
       
-      // Send response back to Claude
-      console.log(JSON.stringify(result));
+      // Check if the result is already a properly formatted MCP response
+      if (result.jsonrpc === '2.0') {
+        // It's already properly formatted, send it as-is
+        console.error('[Client] Sending properly formatted MCP response');
+        console.log(JSON.stringify(result));
+      } else if (response.ok) {
+        // Wrap non-MCP responses in proper format
+        const wrappedResponse = {
+          jsonrpc: '2.0',
+          id: message.id,
+          result: result
+        };
+        console.log(JSON.stringify(wrappedResponse));
+      } else {
+        // Server returned an error status but we got JSON - it might be an MCP error
+        if (result.error) {
+          // It looks like an error response, ensure it has proper MCP format
+          const errorResponse = {
+            jsonrpc: '2.0',
+            id: message.id || result.id || null,
+            error: result.error
+          };
+          console.log(JSON.stringify(errorResponse));
+        } else {
+          // Unknown error format, create a proper error response
+          const errorResponse = {
+            jsonrpc: '2.0',
+            id: message.id,
+            error: {
+              code: -32603,
+              message: `Server error ${response.status}`,
+              data: result
+            }
+          };
+          console.log(JSON.stringify(errorResponse));
+        }
+      }
       
     } catch (error) {
       console.error('[Client] Error:', error.message);
