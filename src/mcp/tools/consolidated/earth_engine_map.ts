@@ -21,7 +21,9 @@ const MapToolSchema = z.object({
   layers: z.array(z.object({
     name: z.string().describe('REQUIRED - Display name for this layer (e.g., "Sentinel-2 January 2025")'),
     input: z.string().optional().describe('REQUIRED - The composite/model key to visualize (e.g., composite_1234567890). Must be provided for each layer'),
+    data: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
     compositeKey: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
+    dataset: z.string().optional().describe('ALIAS for input - Same as input, the composite/model key to visualize'),
     tileUrl: z.string().optional().describe('INTERNAL USE - Leave empty, will be generated automatically'),
     bands: z.array(z.string()).optional().describe('RECOMMENDED - Band names to display. For Sentinel-2 RGB use ["B4","B3","B2"]. For indices use single band like ["NDVI"]'),
     visible: z.boolean().optional().describe('OPTIONAL - Set to false to hide layer initially. Default: true'),
@@ -271,34 +273,34 @@ async function createMap(params: any) {
           continue;
         }
         
-        // Get the image for this layer (either from layer.input/compositeKey or use primary image)
+        // Get the image for this layer (either from layer.input/data/compositeKey or use primary image)
         let layerImage;
         let layerDatasetType = datasetType;
         
-        // Support both 'input' and 'compositeKey' field names
-        const layerInputKey = layer.input || layer.compositeKey;
+        // Support multiple field names: 'input', 'data', 'dataset', 'compositeKey'
+        const layerInputKey = layer.input || layer.data || layer.dataset || layer.compositeKey;
         
         if (layerInputKey) {
           // Layer has its own input source
           layerImage = compositeStore[layerInputKey];
           if (!layerImage) {
-            console.log(`[Map] No image found in store for: ${layer.input}, attempting direct creation...`);
+            console.log(`[Map] No image found in store for: ${layerInputKey}, attempting direct creation...`);
             
             // FALLBACK: Create the image directly based on the input key pattern
             try {
-              if (layer.input.includes('classification')) {
+              if (layerInputKey.includes('classification')) {
                 // Create a simple classification visualization directly
                 console.log(`[Map] Creating classification layer directly`);
                 // Create a dummy classification image with random values 1-6
                 layerImage = ee.Image.random(42).multiply(6).add(1).floor().rename('classification');
-              } else if (layer.input.includes('ndvi')) {
+              } else if (layerInputKey.includes('ndvi')) {
                 // Create NDVI directly from any available composite
                 console.log(`[Map] Creating NDVI layer directly`);
                 const tempComposite = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
                   .filterDate('2024-06-01', '2024-08-31')
                   .median();
                 layerImage = tempComposite.normalizedDifference(['B8', 'B4']).rename('NDVI');
-              } else if (layer.input.includes('composite') || layer.input.includes('s2')) {
+              } else if (layerInputKey.includes('composite') || layerInputKey.includes('s2')) {
                 // Create Sentinel-2 composite directly
                 console.log(`[Map] Creating Sentinel-2 composite directly`);
                 layerImage = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
@@ -310,7 +312,7 @@ async function createMap(params: any) {
                   })
                   .median();
               } else {
-                console.log(`[Map] Could not create fallback for ${layer.input}, skipping`);
+                console.log(`[Map] Could not create fallback for ${layerInputKey}, skipping`);
                 continue;
               }
             } catch (fallbackError) {
@@ -318,7 +320,7 @@ async function createMap(params: any) {
               continue;
             }
           }
-          layerDatasetType = detectDatasetType(layer.input);
+          layerDatasetType = detectDatasetType(layerInputKey);
         } else if (primaryImage) {
           // Use the primary image
           layerImage = primaryImage;
@@ -331,7 +333,7 @@ async function createMap(params: any) {
         let layerBands = layer.bands;
         if (!layerBands) {
           // Check if this is an index layer based on the input key
-          const inputLower = (layer.input || '').toLowerCase();
+          const inputLower = (layerInputKey || '').toLowerCase();
           const nameLower = layer.name.toLowerCase();
           
           if (inputLower.includes('ndvi') || nameLower.includes('ndvi')) {
@@ -373,7 +375,7 @@ async function createMap(params: any) {
         const rawVis = { ...visParams, ...layerVisParams, ...flattenedVis };
         const layerVis = normalizeVisParams(rawVis, layerBands, layerDatasetType);
         
-        console.log(`[Map] Layer ${layer.name} - input: ${layer.input || input}, bands: ${layerBands}, vis:`, layerVis);
+        console.log(`[Map] Layer ${layer.name} - input: ${layerInputKey || input}, bands: ${layerBands}, vis:`, layerVis);
         
         // Select bands and visualize
         let visualized;

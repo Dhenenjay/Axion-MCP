@@ -269,9 +269,24 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('[SSE-Stream] Error:', error);
+    // IMPORTANT: Always return MCP-formatted error responses
+    // Try to extract the ID from the message if possible
+    let messageId = null;
+    try {
+      const message = await req.clone().json();
+      messageId = message.id;
+    } catch {}
+    
     return Response.json({
-      error: error.message,
-      stack: error.stack
-    }, { status: 500 });
+      jsonrpc: '2.0',
+      id: messageId || null,  // Use null if we couldn't get the ID
+      error: {
+        code: -32700,  // Parse error
+        message: error.message || 'Request parsing failed',
+        data: {
+          stack: error.stack
+        }
+      }
+    });
   }
 }
