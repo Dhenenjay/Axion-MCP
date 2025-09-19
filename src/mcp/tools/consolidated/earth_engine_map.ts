@@ -146,21 +146,34 @@ function normalizeVisParams(visParams: any, bands: string[], datasetType: string
     // RGB or multi-band visualization
     switch (datasetType) {
       case 'sentinel2-sr':
-        // Sentinel-2 Surface Reflectance: values are 0-1 (scaled from 0-10000)
-        // Force correct range regardless of input
+        // Sentinel-2 Surface Reflectance: Check if values are already scaled
+        // If max > 1000, assume values are in 0-10000 range (raw)
+        // If max <= 1, assume values are in 0-1 range (already scaled)
         if (!normalized.min || normalized.min < 0) {
           normalized.min = 0;
         }
-        // Critical: Always cap max at 0.3 for Sentinel-2 SR
-        if (!normalized.max || normalized.max > 1) {
-          console.log(`[Map] Correcting Sentinel-2 max from ${normalized.max} to 0.3`);
-          normalized.max = 0.3;
+        
+        // Check if values appear to be in raw range (0-10000) or scaled (0-1)
+        if (normalized.max && normalized.max > 100) {
+          // Values appear to be in raw range, keep them as-is
+          console.log(`[Map] Keeping Sentinel-2 raw range: ${normalized.min}-${normalized.max}`);
+          // Common raw ranges for Sentinel-2
+          if (!normalized.max) {
+            normalized.max = 3000; // Default for raw values
+          }
+        } else {
+          // Values appear to be scaled (0-1 range)
+          if (!normalized.max || normalized.max > 1) {
+            console.log(`[Map] Setting Sentinel-2 scaled max from ${normalized.max} to 0.3`);
+            normalized.max = 0.3;
+          }
+          // Cap at 0.3 for better visualization in scaled range
+          if (normalized.max > 0.3) {
+            console.log(`[Map] Capping Sentinel-2 scaled max from ${normalized.max} to 0.3`);
+            normalized.max = 0.3;
+          }
         }
-        // Even if max is between 0.3 and 1, cap it
-        if (normalized.max > 0.3) {
-          console.log(`[Map] Capping Sentinel-2 max from ${normalized.max} to 0.3`);
-          normalized.max = 0.3;
-        }
+        
         // Default gamma for better contrast
         if (!normalized.gamma) {
           normalized.gamma = 1.4;
@@ -213,7 +226,7 @@ function normalizeVisParams(visParams: any, bands: string[], datasetType: string
  * Create an interactive map
  */
 async function createMap(params: any) {
-  const {
+  let {
     input,
     region = 'Unknown',
     layers,
@@ -223,6 +236,27 @@ async function createMap(params: any) {
     zoom = 8,
     basemap = 'satellite'
   } = params;
+  
+  // Try to extract region from layer names if not provided
+  if (region === 'Unknown' && layers && layers.length > 0) {
+    // Check if any layer name contains a region
+    const regionKeywords = ['los angeles', 'new york', 'san francisco', 'california', 'texas', 
+                           'iowa', 'amazon', 'seattle', 'chicago', 'miami', 'denver', 'atlanta'];
+    
+    for (const layer of layers) {
+      const layerNameLower = (layer.name || '').toLowerCase();
+      for (const keyword of regionKeywords) {
+        if (layerNameLower.includes(keyword)) {
+          region = keyword.split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+          console.log(`[Map] Extracted region '${region}' from layer name: ${layer.name}`);
+          break;
+        }
+      }
+      if (region !== 'Unknown') break;
+    }
+  }
   
   console.log(`[Map] Creating map for input: ${input || 'none (using layer inputs)'}`);
   console.log(`[Map] Original visParams:`, visParams);
