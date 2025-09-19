@@ -284,6 +284,11 @@ async function createMap(params: any) {
         
         if (layerInputKey) {
           // Layer has its own input source
+          // Debug: Log what's in the composite store
+          console.log(`[Map] Looking for key: ${layerInputKey}`);
+          console.log(`[Map] Available composites in store: ${Object.keys(compositeStore).join(', ') || 'EMPTY'}`);
+          console.log(`[Map] Store size: ${Object.keys(compositeStore).length}`);
+          
           // First check if it's in the composite store
           layerImage = compositeStore[layerInputKey];
           
