@@ -537,7 +537,8 @@ async function createMap(params: any) {
     addMapSession(mapId, session);
     
     // Generate the map URL
-    const mapUrl = `http://localhost:3000/map/${mapId}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+    const mapUrl = `${baseUrl}/map/${mapId}`;
     
     return {
       success: true,
@@ -610,7 +611,7 @@ async function listMaps() {
     // Convert to array and format
     const maps = Array.from(sessionMap.values()).map(session => ({
       id: session.id,
-      url: `http://localhost:3000/map/${session.id}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || 'http://localhost:3000'}/map/${session.id}`,
       region: session.region,
       created: typeof session.created === 'string' ? session.created : session.created.toISOString(),
       layers: session.layers ? session.layers.length : 0
@@ -628,7 +629,7 @@ async function listMaps() {
     // Fallback to memory-only if Redis fails
     const maps = Object.values(activeMaps).map(session => ({
       id: session.id,
-      url: `http://localhost:3000/map/${session.id}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || 'http://localhost:3000'}/map/${session.id}`,
       region: session.region,
       created: session.created.toISOString(),
       layers: session.layers.length

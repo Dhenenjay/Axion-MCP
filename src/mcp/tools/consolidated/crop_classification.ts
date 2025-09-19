@@ -785,7 +785,8 @@ async function classifyCrops(params: CropClassificationParams) {
       
       // Create map session
       const mapSessionId = `map_${Date.now()}_${uuidv4().slice(0, 8)}`;
-      const mapUrl = `http://localhost:3000/map/${mapSessionId}`;
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+      const mapUrl = `${baseUrl}/map/${mapSessionId}`;
       
       // Determine map center
       const bounds = await geometry.bounds().getInfo();
