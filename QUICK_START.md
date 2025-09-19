@@ -6,40 +6,41 @@ You have **TWO OPTIONS** to use Axion MCP:
 
 ---
 
-## Option 1: Use Our Cloud Server (Easiest - No Setup!)
+## Option 1: Use Our NPM Bridge (Easiest - 1 minute!)
 
 ### ✅ Benefits:
-- No installation required
+- Universal - works with any MCP client
+- Auto-generates config for your client
 - Always up-to-date
-- Works from anywhere
-- Free to use
+- One command setup
 
-### 📋 Steps (30 seconds):
+### 📋 Steps (1 minute):
 
-1. **Find your Claude config file:**
-   - **Windows**: `Win+R` → type `%APPDATA%\Claude\claude_desktop_config.json`
-   - **Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - **Linux**: `~/.config/Claude/claude_desktop_config.json`
-
-2. **Add this configuration:**
-```json
-{
-  "mcpServers": {
-    "axion-earth-engine": {
-      "url": "https://axion-mcp.onrender.com/sse",
-      "transport": "sse"
-    }
-  }
-}
+1. **Install the bridge globally:**
+```bash
+npm install -g @axion/mcp-bridge
 ```
 
-3. **Restart Claude Desktop**
+2. **Generate config for your MCP client:**
+```bash
+axion-mcp init
+```
+
+3. **Copy the generated config** to your MCP client
+
+4. **Restart your MCP client**
 
 4. **Start using!** Try these:
    - "Show me NDVI for Tokyo"
    - "Create a water map of the Nile River"
    - "Analyze deforestation in Amazon"
    - "Monitor crops in Punjab, India"
+
+### 📱 Supported MCP Clients:
+- **Claude Desktop** - Anthropic's AI assistant
+- **Cursor** - AI-powered code editor
+- **VS Code MCP** - Microsoft's code editor with MCP support
+- **Any MCP-compatible client** - Generic config available
 
 ### 🌍 Works Great For:
 - 🇺🇸 USA - All states supported
