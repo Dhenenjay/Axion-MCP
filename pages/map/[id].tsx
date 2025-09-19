@@ -63,7 +63,7 @@ export default function MapViewerPage() {
 
   if (loading) {
     return (
-      <div className="container">
+      <>
         <Head>
           <title>Loading Map...</title>
         </Head>
@@ -71,13 +71,35 @@ export default function MapViewerPage() {
           <div className="spinner"></div>
           <p>Loading map session...</p>
         </div>
-      </div>
+        <style jsx>{`
+          .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #1a1a1a;
+            color: white;
+          }
+          .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #444;
+            border-top-color: #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </>
     );
   }
 
   if (error || !mapData) {
     return (
-      <div className="container">
+      <>
         <Head>
           <title>Map Error</title>
         </Head>
@@ -86,7 +108,34 @@ export default function MapViewerPage() {
           <p>{error || 'Unable to load map session'}</p>
           <button onClick={() => router.push('/')}>Go Home</button>
         </div>
-      </div>
+        <style jsx>{`
+          .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #1a1a1a;
+            color: white;
+          }
+          .error-container h1 {
+            color: #f44336;
+          }
+          .error-container button {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+          }
+          .error-container button:hover {
+            background: #45a049;
+          }
+        `}</style>
+      </>
     );
   }
 
@@ -126,7 +175,6 @@ export default function MapViewerPage() {
           </div>
         </div>
       </div>
-    </ErrorBoundary>
 
       <style jsx>{`
         .map-page {
@@ -197,60 +245,7 @@ export default function MapViewerPage() {
           font-size: 0.85rem;
           color: #ccc;
         }
-
-        .loading-container,
-        .error-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          background: #1a1a1a;
-          color: white;
-        }
-
-        .spinner {
-          width: 50px;
-          height: 50px;
-          border: 3px solid #444;
-          border-top-color: #4CAF50;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .error-container h1 {
-          color: #f44336;
-        }
-
-        .error-container button {
-          margin-top: 1rem;
-          padding: 0.5rem 1rem;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 1rem;
-        }
-
-        .error-container button:hover {
-          background: #45a049;
-        }
-
-        .loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          background: #1a1a1a;
-          color: white;
-          font-size: 1.2rem;
-        }
       `}</style>
-    </>
+    </ErrorBoundary>
   );
 }
