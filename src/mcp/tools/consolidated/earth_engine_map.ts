@@ -67,7 +67,7 @@ export interface MapSession {
   id: string;
   input: string;
   tileUrl: string;
-  created: Date;
+  created: string; // ISO string for Redis serialization
   region: string;
   layers: Array<{
     name: string;
@@ -523,7 +523,7 @@ async function createMap(params: any) {
       id: mapId,
       input,
       tileUrl: mapLayers[0].tileUrl, // Primary tile URL for backward compatibility
-      created: new Date(),
+      created: new Date().toISOString(), // Store as ISO string for Redis serialization
       region,
       layers: mapLayers,
       metadata: {

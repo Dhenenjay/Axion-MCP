@@ -25,6 +25,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     tileUrl: session.tileUrl,
     layers: session.layers,
     metadata: session.metadata,
-    created: session.created.toISOString()
+    created: session.created ? 
+      (typeof session.created === 'string' ? session.created : 
+       session.created.toISOString ? session.created.toISOString() : 
+       new Date().toISOString()) : 
+      new Date().toISOString()
   });
 }
