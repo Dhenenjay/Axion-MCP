@@ -292,6 +292,7 @@ async function createComposite(params: any) {
     const compositeKey = `composite_${Date.now()}`;
     
     // Use the global store helper
+    console.log(`[Process] Storing composite with key: ${compositeKey}`);
     addComposite(compositeKey, composite, {
       datasetId: datasetToCheck || datasetId,
       compositeType,
@@ -299,6 +300,14 @@ async function createComposite(params: any) {
       endDate: finalEndDate,
       region: finalRegion
     });
+    console.log(`[Process] Composite stored. Store now has ${Object.keys(compositeStore).length} items`);
+    console.log(`[Process] Available keys: ${Object.keys(compositeStore).join(', ')}`);
+    
+    // Verify it was stored correctly
+    const verifyStored = compositeStore[compositeKey];
+    console.log(`[Process] Verification - Can retrieve composite? ${!!verifyStored}`);
+    console.log(`[Process] Verification - Composite has methods? ${verifyStored && typeof verifyStored.getMapId === 'function'}`);
+    
     
     return {
       success: true,

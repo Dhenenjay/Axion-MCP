@@ -309,7 +309,19 @@ async function createMap(params: any) {
   if (input) {
     primaryImage = compositeStore[input];
     if (!primaryImage) {
-      throw new Error(`No image found for key: ${input}`);
+      // Composite not found in store - provide helpful error with available keys
+      const availableKeys = Object.keys(compositeStore);
+      return {
+        success: false,
+        operation: 'create',
+        error: `No image found for composite key: ${input}`,
+        availableComposites: availableKeys.length > 0 ? availableKeys : [],
+        storeSize: availableKeys.length,
+        help: availableKeys.length === 0 
+          ? 'The composite store is empty. This can happen in serverless environments where memory is not persisted between requests. To create a map: 1) Create a composite with earth_engine_process in the SAME conversation/session, 2) Immediately use the returned composite key with earth_engine_map. DO NOT use custom key names - use the exact key returned by earth_engine_process.'
+          : `Available composite keys: ${availableKeys.join(', ')}. Use one of these keys instead.`,
+        suggestion: 'Call earth_engine_process with operation="composite" first, then use the returned composite key immediately in this same request flow.'
+      };
     }
   }
   
