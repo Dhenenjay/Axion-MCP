@@ -298,6 +298,7 @@ async function createComposite(params: any) {
       compositeType,
       startDate: finalStartDate,
       endDate: finalEndDate,
+      dateRange: { start: finalStartDate, end: finalEndDate }, // Add dateRange for Redis recreation
       region: finalRegion
     });
     console.log(`[Process] Composite stored. Store now has ${Object.keys(compositeStore).length} items`);
@@ -359,7 +360,8 @@ async function createComposite(params: any) {
       datasetId: datasetToCheck || datasetId,
       compositeType,
       startDate: finalStartDate || startDate,
-      endDate: finalEndDate || endDate
+      endDate: finalEndDate || endDate,
+      dateRange: { start: finalStartDate || startDate, end: finalEndDate || endDate } // Add dateRange for Redis recreation
     });
     
     return {

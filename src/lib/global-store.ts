@@ -105,11 +105,86 @@ export async function getComposite(key: string) {
     const redisData = await redisStore.getComposite(key);
     if (redisData) {
       console.log(`[GlobalStore] Found composite ${key} metadata in Redis`);
-      console.log(`[GlobalStore] Note: EE object needs to be recreated from metadata`);
+      console.log(`[GlobalStore] Attempting to recreate EE object from metadata`);
+      
       // Store the metadata for reference
       globalMetadataStore[key] = redisData;
-      // Return null - the calling code needs to recreate the EE object
-      return null;
+      
+      // Try to recreate the EE image from metadata
+      if (redisData.datasetId && redisData.dateRange) {
+        try {
+          const { datasetId, dateRange, region, compositeType = 'median' } = redisData;
+          
+          console.log(`[GlobalStore] Recreating composite from dataset: ${datasetId}`);
+          console.log(`[GlobalStore] Date range: ${dateRange.start} to ${dateRange.end}`);
+          console.log(`[GlobalStore] Region: ${region || 'global'}`);
+          
+          // Recreate the collection
+          let collection = ee.ImageCollection(datasetId)
+            .filterDate(dateRange.start || dateRange.startDate, dateRange.end || dateRange.endDate);
+          
+          // Apply region filter if available
+          if (region && typeof region === 'string') {
+            // Import parseAoi function
+            const { parseAoi } = await import('../utils/geo');
+            const geometry = await parseAoi(region);
+            collection = collection.filterBounds(geometry);
+          }
+          
+          // Apply cloud filtering for optical sensors
+          if (datasetId.includes('COPERNICUS/S2')) {
+            collection = collection
+              .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+              .map((img: any) => {
+                const qa = img.select('QA60');
+                const mask = qa.bitwiseAnd(1 << 10).eq(0);
+                return img.updateMask(mask).divide(10000).copyProperties(img, ['system:time_start']);
+              });
+          } else if (datasetId.includes('LANDSAT')) {
+            collection = collection.filter(ee.Filter.lt('CLOUD_COVER', 20));
+          }
+          
+          // Create composite based on type
+          let recreatedImage;
+          switch (compositeType) {
+            case 'median':
+              recreatedImage = collection.median();
+              break;
+            case 'mean':
+              recreatedImage = collection.mean();
+              break;
+            case 'max':
+              recreatedImage = collection.max();
+              break;
+            case 'min':
+              recreatedImage = collection.min();
+              break;
+            default:
+              recreatedImage = collection.median();
+          }
+          
+          // Clip to region if specified
+          if (region && typeof region === 'string') {
+            const { parseAoi } = await import('../utils/geo');
+            const geometry = await parseAoi(region);
+            recreatedImage = recreatedImage.clip(geometry);
+          }
+          
+          // Store in memory for this session
+          globalCompositeStore[key] = recreatedImage;
+          
+          console.log(`[GlobalStore] Successfully recreated composite ${key} from Redis metadata`);
+          return recreatedImage;
+          
+        } catch (recreateError) {
+          console.error(`[GlobalStore] Failed to recreate EE object from metadata:`, recreateError);
+          // Return null if recreation fails
+          return null;
+        }
+      } else {
+        console.log(`[GlobalStore] Insufficient metadata to recreate EE object for ${key}`);
+        return null;
+      }
     }
   } catch (error) {
     console.error(`[GlobalStore] Failed to check Redis:`, error);
