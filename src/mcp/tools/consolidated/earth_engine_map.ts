@@ -146,23 +146,28 @@ function normalizeVisParams(visParams: any, bands: string[], datasetType: string
     // RGB or multi-band visualization
     switch (datasetType) {
       case 'sentinel2-sr':
-        // Sentinel-2 Surface Reflectance - handle both scaled and raw values
-        if (!normalized.min) {
+        // Sentinel-2 Surface Reflectance - OUR composites are ALWAYS scaled to 0-1
+        // Set safe defaults for min/max
+        if (!normalized.min && normalized.min !== 0) {
           normalized.min = 0;
         }
         
         // Check if max value indicates scaled (0-1) or raw (0-10000) range
         if (!normalized.max) {
-          // No max specified, use a sensible default
-          normalized.max = 0.3; // Default for scaled values
+          // No max specified, use a sensible default for scaled 0-1 range
+          normalized.max = 0.3; // Default for scaled values (bright enough to see data)
           console.log(`[Map] Using default Sentinel-2 max: 0.3 (scaled range)`);
-        } else if (normalized.max <= 1) {
-          // Max <= 1 indicates already scaled values, keep as-is
+        } else if (normalized.max <= 1 && normalized.max >= 0.1) {
+          // Max is in a reasonable scaled range (0.1-1), keep as-is
           console.log(`[Map] Keeping scaled Sentinel-2 max: ${normalized.max}`);
-        } else {
-          // Max > 1 could be raw values, but we now handle this earlier
-          // in the adjustment phase, so just keep it
-          console.log(`[Map] Keeping provided Sentinel-2 max: ${normalized.max}`);
+        } else if (normalized.max < 0.1 && normalized.max > 0) {
+          // Max is too small, might cause dark/black visualization
+          console.log(`[Map] WARNING: Sentinel-2 max too small (${normalized.max}), adjusting to 0.3`);
+          normalized.max = 0.3;
+        } else if (normalized.max > 1) {
+          // Max > 1 likely means raw values were provided despite image being scaled
+          console.log(`[Map] WARNING: Sentinel-2 max > 1 (${normalized.max}), this should have been converted earlier`);
+          // Keep it for now - should have been handled by conversion logic
         }
         
         // Default gamma for better contrast
@@ -514,20 +519,30 @@ async function createMap(params: any) {
         );
         let rawVis = { ...visParams, ...layerVisParams, ...flattenedVis };
         
-        // If the image is already scaled (0-1 range) but vis params are for raw values (e.g., max: 3000)
-        // we need to adjust the vis params
-        if (isAlreadyScaled && rawVis.max && rawVis.max > 10) {
-          console.log(`[Map] Image is scaled but vis params are for raw values (max: ${rawVis.max})`);
-          console.log(`[Map] Converting vis params to scaled range`);
-          // Convert from raw (0-10000) to scaled (0-1) range for Sentinel-2
-          if (layerDatasetType === 'sentinel2-sr' || layerInputKey?.includes('composite')) {
-            rawVis = {
-              ...rawVis,
-              min: (rawVis.min || 0) / 10000,
-              max: rawVis.max / 10000
-            };
-            console.log(`[Map] Adjusted vis params: min=${rawVis.min}, max=${rawVis.max}`);
-          }
+        // CRITICAL FIX: Sentinel-2 composites from our earth_engine_process tool are ALWAYS scaled to 0-1
+        // If vis params have max > 10, they're using raw values (0-10000) and need conversion
+        // This applies to ALL Sentinel-2 composites, regardless of where they come from
+        if (rawVis.max && rawVis.max > 10 && (layerDatasetType === 'sentinel2-sr' || layerInputKey?.includes('composite') || layerInputKey?.includes('s2'))) {
+          console.log(`[Map] Sentinel-2 composite detected with raw vis params (max: ${rawVis.max})`);
+          console.log(`[Map] Converting from raw (0-10000) to scaled (0-1) range`);
+          
+          // Convert from raw Sentinel-2 values to scaled values
+          rawVis = {
+            ...rawVis,
+            min: (rawVis.min || 0) / 10000,
+            max: rawVis.max / 10000
+          };
+          console.log(`[Map] Converted vis params: min=${rawVis.min}, max=${rawVis.max}`);
+        }
+        // Also handle the opposite case: if max is very small (< 0.001) it might be incorrectly scaled
+        else if (rawVis.max && rawVis.max < 0.001 && (layerDatasetType === 'sentinel2-sr' || layerInputKey?.includes('composite'))) {
+          console.log(`[Map] Sentinel-2 composite with possibly incorrect tiny max: ${rawVis.max}`);
+          console.log(`[Map] Using safe default range 0-0.3`);
+          rawVis = {
+            ...rawVis,
+            min: 0,
+            max: 0.3
+          };
         }
         
         const layerVis = normalizeVisParams(rawVis, layerBands, layerDatasetType);
