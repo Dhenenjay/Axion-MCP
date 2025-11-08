@@ -150,7 +150,19 @@ async function checkAuth(params: any) {
 async function executeCode(params: any) {
   const { code, language = 'javascript', params: codeParams = {} } = params;
   
-  if (!code) throw new Error('code required for execute operation');
+  if (!code) {
+    return {
+      success: false,
+      operation: 'execute',
+      error: 'code parameter is required for execute operation',
+      example: {
+        operation: 'execute',
+        code: 'return ee.Number(1).add(2);',
+        language: 'javascript'
+      },
+      help: 'Provide JavaScript code that uses the Earth Engine API. The code will be executed with access to the ee object.'
+    };
+  }
   
   try {
     // Create a function from the code string with timeout

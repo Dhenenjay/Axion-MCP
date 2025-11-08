@@ -99,19 +99,28 @@ const TOOLS = [
   },
   {
     name: 'earth_engine_system',
-    description: 'System & Advanced - auth, execute, setup, load, info, health operations',
+    description: 'System & Advanced Operations - Check authentication status (auth), run custom Earth Engine JavaScript code (execute), setup cloud storage (setup), load external data (load), get system info (info), health check (health)',
     inputSchema: {
       type: 'object',
       properties: {
         operation: {
           type: 'string',
           enum: ['auth', 'execute', 'setup', 'load', 'info', 'health'],
-          description: 'System operation'
+          description: 'System operation to perform'
         },
         checkType: {
           type: 'string',
           enum: ['status', 'projects', 'permissions'],
-          description: 'Auth check type'
+          description: 'Type of auth check (only for auth operation)'
+        },
+        code: {
+          type: 'string',
+          description: 'JavaScript code to execute (REQUIRED for execute operation). Example: "return ee.Number(1).add(2);"'
+        },
+        language: {
+          type: 'string',
+          enum: ['javascript'],
+          description: 'Code language (currently only javascript supported)'
         }
       },
       required: ['operation']
@@ -119,17 +128,40 @@ const TOOLS = [
   },
   {
     name: 'earth_engine_map',
-    description: 'Interactive Map Viewer - create, list, delete interactive web maps for large regions',
+    description: 'Interactive Map Viewer - Create interactive web maps with multiple layers. First use earth_engine_process to create composites, then pass the composite keys to this tool. Operations: create (make new map), list (show existing maps), delete (remove map)',
     inputSchema: {
       type: 'object',
       properties: {
         operation: {
           type: 'string',
           enum: ['create', 'list', 'delete'],
-          description: 'Map operation'
+          description: 'Map operation: create to make a new map, list to see all maps, delete to remove a map'
         },
-        mapId: { type: 'string', description: 'Map ID (for list/delete)' },
-        layers: { type: 'array', items: { type: 'object' }, description: 'Map layers' }
+        input: {
+          type: 'string',
+          description: 'OPTIONAL - Primary composite key (e.g., composite_1234567890) from earth_engine_process. If provided, will be used as default for layers.'
+        },
+        region: {
+          type: 'string',
+          description: 'OPTIONAL - Region name for map center (e.g., "Los Angeles", "California")'
+        },
+        layers: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'REQUIRED - Display name for the layer' },
+              input: { type: 'string', description: 'REQUIRED - Composite key from earth_engine_process (e.g., composite_1234567890)' },
+              bands: { type: 'array', items: { type: 'string' }, description: 'Bands to visualize, e.g., ["B4","B3","B2"] for RGB' },
+              min: { type: 'number', description: 'Minimum value for visualization (e.g., 0 for Sentinel-2)' },
+              max: { type: 'number', description: 'Maximum value for visualization (e.g., 3000 for Sentinel-2, 1 for indices)' },
+              palette: { type: 'array', items: { type: 'string' }, description: 'Color palette for single-band visualizations' }
+            },
+            required: ['name', 'input']
+          },
+          description: 'REQUIRED for create - Array of layers, each with its own composite key from earth_engine_process'
+        },
+        mapId: { type: 'string', description: 'Map ID (required for list/delete operations)' }
       },
       required: ['operation']
     }

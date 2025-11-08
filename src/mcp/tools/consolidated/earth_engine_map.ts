@@ -254,16 +254,53 @@ async function createMap(params: any) {
   
   // Check if we have input or layers with individual inputs
   if (!input && (!layers || layers.length === 0)) {
-    throw new Error('Either input or layers with individual inputs required');
+    return {
+      success: false,
+      operation: 'create',
+      error: 'Either input or layers array is required',
+      example: {
+        operation: 'create',
+        layers: [
+          {
+            name: 'My Layer',
+            input: 'composite_1234567890', // Use a composite key from earth_engine_process
+            bands: ['B4', 'B3', 'B2'],
+            min: 0,
+            max: 3000
+          }
+        ],
+        region: 'Los Angeles'
+      },
+      help: 'First create a composite using earth_engine_process, then use the returned composite key as the input for each layer.'
+    };
   }
   
   // Validate that layers have inputs or tileUrls if no primary input is provided
   if (!input && layers && layers.length > 0) {
-    const hasInputs = layers.every(layer => 
-      layer.input || layer.data || layer.image || layer.dataset || layer.compositeKey || layer.tileUrl
+    const layersWithoutInput = layers.filter(layer => 
+      !layer.input && !layer.data && !layer.image && !layer.dataset && !layer.compositeKey && !layer.tileUrl
     );
-    if (!hasInputs) {
-      throw new Error('When no primary input is provided, all layers must have their own input or tileUrl');
+    
+    if (layersWithoutInput.length > 0) {
+      return {
+        success: false,
+        operation: 'create',
+        error: 'All layers must have an input parameter',
+        missingLayers: layersWithoutInput.map(l => l.name),
+        example: {
+          operation: 'create',
+          layers: [
+            {
+              name: layersWithoutInput[0].name,
+              input: 'composite_1234567890', // ADD THIS: Use composite key from earth_engine_process
+              bands: ['B4', 'B3', 'B2'],
+              min: 0,
+              max: 3000
+            }
+          ]
+        },
+        help: 'Each layer needs an "input" field containing a composite key from earth_engine_process. First create composites for your data, then use those keys here.'
+      };
     }
   }
   
